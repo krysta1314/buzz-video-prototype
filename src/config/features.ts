@@ -49,7 +49,7 @@ export const FEATURE_SECTIONS: FeatureSection[] = [
       { label: 'Long Video Generation (Early Access)',     values: { free: no,  starter: no,  pro: no,  ultra: yes } },
       { label: 'No Watermark',                             values: { free: no,  starter: yes, pro: yes, ultra: yes } },
       { label: 'Character Customization (Seedance 2.0)',   values: { free: no,  starter: unlimited, pro: unlimited, ultra: unlimited } },
-      { label: 'AI Avatars',                               values: { free: { kind: 'value', label: '1' }, starter: unlimited, pro: unlimited, ultra: unlimited } },
+      { label: 'AI Avatars',                               values: { free: { kind: 'value', label: '10' }, starter: unlimited, pro: unlimited, ultra: unlimited } },
     ],
   },
   {
