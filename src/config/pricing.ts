@@ -47,6 +47,13 @@ export interface FreePlanData extends PlanCopy {
   exampleSub: string;
 }
 
+// Mock subscription data — for role-preview prototype. Real app reads from /api/billing.
+export const FAKE_SUBSCRIPTION = {
+  starter: { nextChargeDate: 'May 28, 2026', nextChargeAmount: '$13.30/mo', cycle: 'yearly' as const },
+  pro:     { nextChargeDate: 'May 28, 2026', nextChargeAmount: '$34.30/mo', cycle: 'yearly' as const },
+  ultra:   { nextChargeDate: 'May 28, 2026', nextChargeAmount: '$62.30/mo', cycle: 'yearly' as const },
+} satisfies Record<PaidPlanId, { nextChargeDate: string; nextChargeAmount: string; cycle: 'monthly' | 'yearly' }>;
+
 export const FREE_PLAN: FreePlanData = {
   id: 'free',
   name: 'Free',

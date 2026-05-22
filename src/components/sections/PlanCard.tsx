@@ -7,6 +7,7 @@ import {
   type PaidPlanId,
   type Scale,
 } from '@/config/pricing';
+import type { UserRole } from '@/hooks/useUserRole';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { InfoIcon } from '@/components/ui/InfoIcon';
@@ -22,7 +23,6 @@ import { fmtMoney, fmtNumber } from '@/lib/format';
 const CARD_BASE =
   'relative bg-white rounded-2xl p-6 flex flex-col gap-3.5';
 
-/** Per-row min-heights to keep top sections aligned across cards. */
 const ROW = {
   header: 'min-h-[60px]',
   price: 'min-h-[64px]',
@@ -43,16 +43,27 @@ const ctaVariants = {
   ultra: 'secondary',
 } as const;
 
+/** Tier order: lower index = lower plan. */
+const TIER_RANK: Record<UserRole, number> = { free: 0, starter: 1, pro: 2, ultra: 3 };
+
+type CtaVariant = 'default' | 'upgrade' | 'current' | 'downgrade';
+
+function getCtaVariant(role: UserRole, planId: PaidPlanId): CtaVariant {
+  if (role === 'free') return 'default';
+  if (role === planId) return 'current';
+  return TIER_RANK[planId] > TIER_RANK[role] ? 'upgrade' : 'downgrade';
+}
+
 interface PaidCardProps {
   planId: PaidPlanId;
   cycle: BillingCycle;
   scale: Scale;
   onScaleChange: (s: Scale) => void;
+  currentRole: UserRole;
 }
 
-export function PaidPlanCard({ planId, cycle, scale, onScaleChange }: PaidCardProps) {
+export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole }: PaidCardProps) {
   const plan = PAID_PLANS[planId];
-  // Starter is a fixed-price plan — no scaling slider, always treated as 1x.
   const isFixedPrice = planId === 'starter';
   const effectiveScale: Scale = isFixedPrice ? 1 : scale;
   const price = computePrice(planId, effectiveScale, cycle);
@@ -64,12 +75,20 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange }: PaidCardPr
   const isYearly = cycle === 'yearly';
   const savings = price.monthlyPrice * 12 - price.annualTotal;
 
+  const ctaVariant = getCtaVariant(currentRole, planId);
+  const isCurrent = ctaVariant === 'current';
+
   return (
     <article
       className={`${CARD_BASE} ${variantClasses[planId]}`}
       aria-labelledby={`plan-${planId}-name`}
     >
-      {plan.badge && <Badge variant={plan.badge.variant}>{plan.badge.label}</Badge>}
+      {/* Top badge: Current Plan replaces plan.badge when this is the user's plan */}
+      {isCurrent ? (
+        <CurrentPlanBadge planId={planId} />
+      ) : (
+        plan.badge && <Badge variant={plan.badge.variant}>{plan.badge.label}</Badge>
+      )}
 
       <header className={ROW.header}>
         <div className="flex items-center gap-2 flex-wrap">
@@ -138,10 +157,10 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange }: PaidCardPr
         )}
       </div>
 
-      <Button variant={ctaVariants[planId]}>{plan.cta}</Button>
+      <RoleAwareCTA variant={ctaVariant} planId={planId} planName={plan.name} fallbackCta={plan.cta} />
 
       <div className={`text-center text-xs text-neutral-500 ${ROW.save}`}>
-        {isYearly && (
+        {isYearly && !isCurrent && (
           <>
             <span className="font-semibold text-ink">Save {fmtMoney(savings)}</span> compared to monthly
           </>
@@ -153,6 +172,60 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange }: PaidCardPr
   );
 }
 
+/** Top-edge badge replacing plan.badge when this is the user's current plan. */
+function CurrentPlanBadge({ planId }: { planId: PaidPlanId }) {
+  const themes: Record<PaidPlanId, { bg: string; text: string }> = {
+    starter: { bg: '#0a0a0a',   text: '#ffffff' },
+    pro:     { bg: '#f97316',   text: '#ffffff' },
+    ultra:   { bg: '#7c3aed',   text: '#ffffff' },
+  };
+  const t = themes[planId];
+  return (
+    <span
+      className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 text-[11px] font-semibold tracking-wide rounded-full whitespace-nowrap inline-flex items-center gap-1"
+      style={{ background: t.bg, color: t.text }}
+    >
+      <span aria-hidden>✓</span>
+      Current Plan
+    </span>
+  );
+}
+
+interface RoleAwareCTAProps {
+  variant: CtaVariant;
+  planId: PaidPlanId;
+  planName: string;
+  fallbackCta: string;
+}
+
+function RoleAwareCTA({ variant, planId, planName, fallbackCta }: RoleAwareCTAProps) {
+  if (variant === 'current') {
+    return (
+      <div
+        className="w-full text-center px-4 py-3 rounded-[10px] font-semibold text-sm bg-neutral-100 text-neutral-500 cursor-default inline-flex items-center justify-center gap-2"
+        aria-disabled="true"
+      >
+        <span aria-hidden>✓</span> Your Current Plan
+      </div>
+    );
+  }
+  if (variant === 'upgrade') {
+    return <Button variant={ctaVariants[planId]}>Upgrade to {planName}</Button>;
+  }
+  if (variant === 'downgrade') {
+    return (
+      <a
+        href="#"
+        className="block w-full text-center px-4 py-3 rounded-[10px] font-semibold text-sm border border-neutral-300 text-neutral-600 bg-white hover:bg-neutral-50 transition-colors"
+      >
+        Downgrade to {planName}
+      </a>
+    );
+  }
+  // default — free user
+  return <Button variant={ctaVariants[planId]}>{fallbackCta}</Button>;
+}
+
 export function FreePlanCard() {
   return (
     <article
@@ -161,7 +234,7 @@ export function FreePlanCard() {
     >
       <header className={ROW.header}>
         <h3 id="plan-free-name" className="text-2xl font-bold tracking-tight">{FREE_PLAN.name}</h3>
-        <p className="text-xs text-neutral-500 mt-1">{FREE_PLAN.tagline}</p>
+        <p className="text-sm text-neutral-600 mt-1.5 leading-snug">{FREE_PLAN.tagline}</p>
       </header>
 
       <div className={ROW.price}>
@@ -179,10 +252,7 @@ export function FreePlanCard() {
       </div>
 
       <Button variant="outline">{FREE_PLAN.cta}</Button>
-
-      {/* Empty placeholder matching the Save line slot on paid cards */}
       <div className={ROW.save} aria-hidden />
-
       <FeatureMatrix planId="free" />
     </article>
   );
