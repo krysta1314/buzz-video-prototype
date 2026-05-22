@@ -18,4 +18,24 @@
 
 @layer utilities {
   .text-balance { text-wrap: balance; }
+
+  /* Diagonal strike-through, bottom-left → top-right. */
+  .strike-diagonal {
+    position: relative;
+    display: inline-block;
+    text-decoration: none;
+  }
+  .strike-diagonal::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top right,
+      transparent calc(50% - 1.5px),
+      #f43f5e calc(50% - 1.5px),
+      #f43f5e calc(50% + 1.5px),
+      transparent calc(50% + 1.5px)
+    );
+    pointer-events: none;
+  }
 }

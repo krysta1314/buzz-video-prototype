@@ -4,7 +4,7 @@ export function PlanGuide() {
   return (
     <section className="mt-20 bg-neutral-50 rounded-2xl p-8 sm:p-12">
       <header className="text-center mb-12">
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+        <h2 className="text-2xl sm:text-[28px] font-bold tracking-tight">
           Not sure which plan is right for you?
         </h2>
         <p className="mt-2 text-sm text-neutral-500">
@@ -16,7 +16,7 @@ export function PlanGuide() {
         {GUIDE.map(g => (
           <article key={g.id}>
             <header className="pb-4 border-b border-neutral-200">
-              <h3 className="text-xl font-bold tracking-tight">{g.name}</h3>
+              <h3 className="text-2xl font-bold tracking-tight">{g.name}</h3>
               <p className="mt-1 text-[13px] text-neutral-500 leading-snug">{g.tagline}</p>
             </header>
 
@@ -32,7 +32,7 @@ export function PlanGuide() {
 function GuideList({ label, items }: { label: string; items: string[] }) {
   return (
     <section className="mt-5">
-      <h4 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-neutral-400">
+      <h4 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-400">
         {label}
       </h4>
       <ul className="mt-2.5 space-y-1.5">

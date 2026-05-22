@@ -2,12 +2,14 @@ import {
   FREE_PLAN,
   PAID_PLANS,
   MODEL_BY_ID,
+  SCALE_DISCOUNTS,
   type BillingCycle,
   type PaidPlanId,
   type Scale,
 } from '@/config/pricing';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { InfoIcon } from '@/components/ui/InfoIcon';
 import { ScalingSlider } from '@/components/ui/ScalingSlider';
 import { FeatureMatrix } from './FeatureMatrix';
 import { computeCredits, computeGenerations, computePrice } from '@/lib/compute';
@@ -50,8 +52,11 @@ interface PaidCardProps {
 
 export function PaidPlanCard({ planId, cycle, scale, onScaleChange }: PaidCardProps) {
   const plan = PAID_PLANS[planId];
-  const price = computePrice(planId, scale, cycle);
-  const credits = computeCredits(planId, scale, cycle);
+  // Starter is a fixed-price plan — no scaling slider, always treated as 1x.
+  const isFixedPrice = planId === 'starter';
+  const effectiveScale: Scale = isFixedPrice ? 1 : scale;
+  const price = computePrice(planId, effectiveScale, cycle);
+  const credits = computeCredits(planId, effectiveScale, cycle);
   const imgModel = MODEL_BY_ID[plan.exampleImageModel];
   const vidModel = MODEL_BY_ID[plan.exampleVideoModel];
   const imgCount = computeGenerations(credits, plan.exampleImageModel);
@@ -67,18 +72,35 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange }: PaidCardPr
       {plan.badge && <Badge variant={plan.badge.variant}>{plan.badge.label}</Badge>}
 
       <header className={ROW.header}>
-        <h3 id={`plan-${planId}-name`} className="text-2xl font-bold tracking-tight">{plan.name}</h3>
-        <p className="text-xs text-neutral-500 mt-1">{plan.tagline}</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 id={`plan-${planId}-name`} className="text-2xl font-bold tracking-tight">{plan.name}</h3>
+          {SCALE_DISCOUNTS[effectiveScale] > 0 && (
+            <span
+              className="inline-flex items-center text-[13px] font-extrabold text-white px-3 py-1 leading-none tracking-wider"
+              style={{
+                background: 'linear-gradient(135deg, #ff0051 0%, #ff3d7a 100%)',
+                transform: 'skewX(-14deg)',
+                boxShadow: '0 4px 12px rgba(255, 0, 81, 0.28)',
+                borderRadius: '4px',
+              }}
+            >
+              <span style={{ transform: 'skewX(14deg)', display: 'inline-block' }}>
+                {Math.round(SCALE_DISCOUNTS[effectiveScale] * 100)}% OFF
+              </span>
+            </span>
+          )}
+        </div>
+        <p className="text-sm text-neutral-600 mt-1.5 leading-snug">{plan.tagline}</p>
       </header>
 
       <div className={ROW.price}>
         <div className="flex items-baseline gap-2 flex-wrap">
-          {isYearly && (
-            <span className="text-[22px] text-rose-500 line-through font-bold tracking-tight">
-              {fmtMoney(price.monthlyPrice)}
+          {price.displayPrice < price.referencePrice && (
+            <span className="text-[23px] text-neutral-400 line-through font-bold tracking-tight">
+              {fmtMoney(price.referencePrice)}
             </span>
           )}
-          <span className="text-[32px] font-bold tracking-tight leading-none">
+          <span className="text-[40px] font-bold tracking-tight leading-none">
             {fmtMoney(price.displayPrice)}
           </span>
           <span className="text-[13px] text-neutral-500 font-medium">/ mo</span>
@@ -86,16 +108,34 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange }: PaidCardPr
       </div>
 
       <div className={`bg-neutral-50 rounded-[10px] p-3 text-xs leading-[1.5] flex flex-col gap-2 ${ROW.credits}`}>
-        <div className="font-semibold text-[13px] text-ink">
-          {fmtNumber(credits)} credits/{isYearly ? 'year' : 'month'}
+        <div className="font-semibold text-[13px] text-ink flex items-center gap-1">
+          <span>{fmtNumber(credits)} credits/{isYearly ? 'year' : 'month'}</span>
+          {isYearly && (
+            <InfoIcon label="Yearly credits delivery">
+              Yearly plans deliver all credits upfront upon successful subscription.
+            </InfoIcon>
+          )}
         </div>
         <div className="text-neutral-500">
           <div>≈ {fmtNumber(imgCount)} {imgModel.name} {imgModel.unitLabel}s</div>
           <div>≈ {fmtNumber(vidCount)} {vidModel.name} {vidModel.unitLabel}s ({vidModel.sku})</div>
         </div>
-        <div className="mt-auto pt-2">
-          <ScalingSlider value={scale} onChange={onScaleChange} ariaLabel={`${plan.name} credit multiplier`} />
-        </div>
+        {!isFixedPrice && (
+          <div className="mt-auto pt-2">
+            <ScalingSlider value={scale} onChange={onScaleChange} ariaLabel={`${plan.name} credit multiplier`} />
+          </div>
+        )}
+        {isFixedPrice && (
+          <div className="mt-auto pt-2">
+            <div
+              className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-medium text-neutral-700 border border-white/70 shadow-sm backdrop-blur-md"
+              style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.55) 100%)' }}
+            >
+              <span aria-hidden className="text-emerald-600 font-bold leading-none">✓</span>
+              Fixed amount of {fmtNumber(credits)} credits/{isYearly ? 'year' : 'mo'}
+            </div>
+          </div>
+        )}
       </div>
 
       <Button variant={ctaVariants[planId]}>{plan.cta}</Button>
@@ -126,7 +166,7 @@ export function FreePlanCard() {
 
       <div className={ROW.price}>
         <div className="flex items-baseline gap-1">
-          <span className="text-[32px] font-bold tracking-tight leading-none">$0</span>
+          <span className="text-[40px] font-bold tracking-tight leading-none">$0</span>
         </div>
       </div>
 

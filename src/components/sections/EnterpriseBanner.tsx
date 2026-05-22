@@ -19,7 +19,7 @@ export function EnterpriseBanner() {
         {/* Right — heading + CTA */}
         <div className="flex flex-col gap-5">
           <div>
-            <h3 className="text-2xl sm:text-[28px] font-bold tracking-tight leading-tight">
+            <h3 className="text-2xl font-bold tracking-tight leading-tight">
               Enterprise
             </h3>
             <p className="text-sm text-neutral-500 mt-1">Teams &amp; companies</p>

@@ -55,8 +55,8 @@ export const FEATURE_SECTIONS: FeatureSection[] = [
   {
     title: 'Access Models (Image)',
     rows: [
-      { label: 'Seedream 4.5',      values: { free: yes, starter: yes, pro: yes, ultra: yes } },
-      { label: 'Seedream 5.0 Lite', values: { free: yes, starter: yes, pro: yes, ultra: yes } },
+      { label: 'Seedream 4.5',      values: { free: full, starter: full, pro: full, ultra: full } },
+      { label: 'Seedream 5.0 Lite', values: { free: full, starter: full, pro: full, ultra: full } },
       premium('Nano Banana'),
       premium('Nano Banana 2'),
       premium('Nano Banana Pro'),

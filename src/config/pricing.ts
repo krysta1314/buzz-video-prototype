@@ -8,6 +8,15 @@ export type BillingCycle = 'monthly' | 'yearly';
 
 export const SCALES: readonly Scale[] = [1, 2, 3, 4, 6] as const;
 
+/** Bulk discount applied to price when scaling up. */
+export const SCALE_DISCOUNTS: Record<Scale, number> = {
+  1: 0,
+  2: 0.05,
+  3: 0.10,
+  4: 0.15,
+  6: 0.20,
+};
+
 export interface PlanCopy {
   id: PlanId;
   name: string;
@@ -62,8 +71,8 @@ export const PAID_PLANS: Record<PaidPlanId, PaidPlanData> = {
     baseYearlyMonthlyPrice: 13.3,
     baseYearlyAnnualTotal: 159.6,
     baseMonthlyCredits: 1900,
-    exampleImageModel: 'nano-banana',
-    exampleVideoModel: 'seedance-1-5-pro',
+    exampleImageModel: 'gpt-image-2',
+    exampleVideoModel: 'seedance-2',
     accessImage: '7-Day Unlimited/Month',
     accessVideo: '7-Day Unlimited/Month',
     features: [
@@ -86,8 +95,8 @@ export const PAID_PLANS: Record<PaidPlanId, PaidPlanData> = {
     baseYearlyMonthlyPrice: 34.3,
     baseYearlyAnnualTotal: 411.6,
     baseMonthlyCredits: 4900,
-    exampleImageModel: 'nano-banana-2',
-    exampleVideoModel: 'seedance-2-fast',
+    exampleImageModel: 'gpt-image-2',
+    exampleVideoModel: 'seedance-2',
     accessImage: '15-Day Unlimited/Month',
     accessVideo: '15-Day Unlimited/Month',
     features: [
@@ -161,7 +170,7 @@ export const MODELS: readonly Model[] = [
   { id: 'veo-3-1',         name: 'Veo 3.1',           category: 'video', sku: '720p · 8s',        pricePerUnit: 1600, freeAccess: false, unitLabel: 'video' },
   { id: 'veo-3-1-fast',    name: 'Veo 3.1 Fast',      category: 'video', sku: '720p · 8s',        pricePerUnit: 400,  freeAccess: false, unitLabel: 'video' },
   { id: 'seedance-1-5-pro',name: 'Seedance 1.5 Pro',  category: 'video', sku: '480p · 10s',       pricePerUnit: 58,   freeAccess: false, unitLabel: 'video' },
-  { id: 'seedance-2',      name: 'Seedance 2.0',      category: 'video', sku: '480p · 10s',       pricePerUnit: 337,  freeAccess: false, unitLabel: 'video' },
+  { id: 'seedance-2',      name: 'Seedance 2.0',      category: 'video', sku: '720p · 10s',       pricePerUnit: 721,  freeAccess: false, unitLabel: 'video' },
   { id: 'seedance-2-fast', name: 'Seedance 2.0 Fast', category: 'video', sku: '480p · 10s',       pricePerUnit: 270,  freeAccess: false, unitLabel: 'video' },
   { id: 'kling-3',         name: 'Kling 3.0',         category: 'video', sku: 'std · 5s',         pricePerUnit: 175,  freeAccess: false, unitLabel: 'video' },
 ] as const;
@@ -173,8 +182,8 @@ export const MODEL_BY_ID: Record<ModelId, Model> = Object.fromEntries(
 // =========== Access policies for Compare Features ===========
 
 export const ACCESS_POLICY = {
-  image: { free: 'Free Models Only', starter: '7-Day Unlimited/Month', pro: '15-Day Unlimited/Month', ultra: 'Full Access' },
-  video: { free: '✗',                starter: '7-Day Unlimited/Month', pro: '15-Day Unlimited/Month', ultra: 'Full Access' },
+  image: { free: 'Free Models Only', starter: '+7-Day Access / mo', pro: '+15-Day Access / mo', ultra: 'Full Access' },
+  video: { free: '✗',                starter: '+7-Day Access / mo', pro: '+15-Day Access / mo', ultra: 'Full Access' },
 } satisfies Record<ModelCategory, Record<PlanId, string>>;
 
 // =========== "Not sure which plan" guide ===========

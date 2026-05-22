@@ -20,7 +20,11 @@ const FREE_CREDITS = 500;
 
 export function CompareFeatures({ region }: Props) {
   const { cycle, scales, setCycle, setScale } = region;
-  const creditsFor = (planId: PaidPlanId) => computeCredits(planId, scales[planId], cycle);
+  const creditsFor = (planId: PaidPlanId) => {
+    // Starter is fixed-price — always 1x regardless of stored state.
+    const effectiveScale = planId === 'starter' ? 1 : scales[planId];
+    return computeCredits(planId, effectiveScale, cycle);
+  };
   const planColTint = (_planId: PaidPlanId) => '';
 
   const imageModels = MODELS.filter(m => m.category === 'image');
@@ -29,7 +33,7 @@ export function CompareFeatures({ region }: Props) {
   return (
     <section className="mt-20" id="compare">
       <div className="text-center mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold">Compare all features and plans</h2>
+        <h2 className="text-2xl sm:text-[28px] font-bold tracking-tight">Compare all features and plans</h2>
         <p className="mt-2 text-sm text-neutral-500">
           Adjust each column&rsquo;s credits independently to see how many images or videos you can generate.
         </p>
@@ -128,7 +132,10 @@ interface PaidColHeaderProps {
 
 function PaidColHeader({ planId, cycle, scale, onScaleChange }: PaidColHeaderProps) {
   const plan = PAID_PLANS[planId];
-  const price = computePrice(planId, scale, cycle);
+  // Starter is fixed-price — no slider, always 1x.
+  const isFixedPrice = planId === 'starter';
+  const effectiveScale = isFixedPrice ? (1 as import('@/config/pricing').Scale) : scale;
+  const price = computePrice(planId, effectiveScale, cycle);
   const isYearly = cycle === 'yearly';
   const tint = '';
   return (
@@ -161,13 +168,15 @@ function PaidColHeader({ planId, cycle, scale, onScaleChange }: PaidColHeaderPro
       <div className="text-[11px] text-neutral-500 mt-0.5 min-h-[14px]">
         {isYearly ? `${fmtMoney(price.annualTotal)} billed annually` : ' '}
       </div>
-      <div className="mt-2.5">
-        <ScalingSlider
-          value={scale}
-          onChange={onScaleChange}
-          ariaLabel={`${plan.name} compare column credit multiplier`}
-        />
-      </div>
+      {!isFixedPrice && (
+        <div className="mt-2.5">
+          <ScalingSlider
+            value={scale}
+            onChange={onScaleChange}
+            ariaLabel={`${plan.name} compare column credit multiplier`}
+          />
+        </div>
+      )}
     </th>
   );
 }

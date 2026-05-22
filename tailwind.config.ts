@@ -7,7 +7,7 @@ export default {
       colors: {
         ink: '#0a0a0a',
         accent: { DEFAULT: '#f97316', soft: '#fff5ec', ink: '#b94c00' },
-        secondary: { DEFAULT: '#2563eb', soft: '#eff6ff' },
+        secondary: { DEFAULT: '#7c3aed', soft: '#f5f3ff', ink: '#5b21b6' },
       },
       fontFamily: {
         sans: [
@@ -18,7 +18,7 @@ export default {
       fontVariantNumeric: { tabular: 'tabular-nums' },
       boxShadow: {
         'card-pro': '0 4px 20px rgba(249, 115, 22, 0.08)',
-        'card-ultra': '0 4px 20px rgba(37, 99, 235, 0.08)',
+        'card-ultra': '0 4px 24px rgba(124, 58, 237, 0.12)',
       },
     },
   },

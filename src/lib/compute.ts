@@ -1,6 +1,7 @@
 import {
   PAID_PLANS,
   MODEL_BY_ID,
+  SCALE_DISCOUNTS,
   type BillingCycle,
   type ModelId,
   type PaidPlanId,
@@ -9,24 +10,29 @@ import {
 } from '@/config/pricing';
 
 export interface PriceBreakdown {
-  /** Strike-through monthly price (only shown in yearly state) */
+  /** Retail reference: base monthly × scale, no discounts. Used for the strike-through. */
+  referencePrice: number;
+  /** Monthly equivalent with bulk discount applied. Used for "Save $X compared to monthly". */
   monthlyPrice: number;
-  /** Headline price displayed per "/ mo" */
+  /** Headline price displayed per "/ mo". */
   displayPrice: number;
-  /** Annual total (only meaningful in yearly state) */
+  /** Annual total (only meaningful in yearly state). */
   annualTotal: number;
 }
 
 export function computePrice(planId: PaidPlanId, scale: Scale, cycle: BillingCycle): PriceBreakdown {
   const p = PAID_PLANS[planId];
-  const monthlyPrice = p.baseMonthlyPrice * scale;
+  const bulkMultiplier = 1 - SCALE_DISCOUNTS[scale];
+  const referencePrice = p.baseMonthlyPrice * scale;
+  const monthlyPrice = referencePrice * bulkMultiplier;
   if (cycle === 'monthly') {
-    return { monthlyPrice, displayPrice: monthlyPrice, annualTotal: monthlyPrice * 12 };
+    return { referencePrice, monthlyPrice, displayPrice: monthlyPrice, annualTotal: monthlyPrice * 12 };
   }
   return {
+    referencePrice,
     monthlyPrice,
-    displayPrice: p.baseYearlyMonthlyPrice * scale,
-    annualTotal: p.baseYearlyAnnualTotal * scale,
+    displayPrice: p.baseYearlyMonthlyPrice * scale * bulkMultiplier,
+    annualTotal: p.baseYearlyAnnualTotal * scale * bulkMultiplier,
   };
 }
 

@@ -33,10 +33,10 @@ export function FeatureMatrix({ planId }: FeatureMatrixProps) {
                       <span className="ml-1.5 inline-flex">
                         <InfoIcon label={`${row.label} access details`}>
                           <div>
-                            • Get {windowDays}-Day unlimited generations for {row.label}
+                            • {planId.charAt(0).toUpperCase() + planId.slice(1)} plan includes a bonus {windowDays}-Day access for {row.label}. Each generation consumes credits.
                           </div>
                           <div className="mt-1">
-                            • Available for consecutive {windowDays} days after purchase
+                            • Available for consecutive {windowDays} days after purchase or renewal.
                           </div>
                         </InfoIcon>
                       </span>
@@ -68,7 +68,7 @@ function Value({ value }: { value: AccessValue }) {
     case 'window':
       return (
         <Tag variant={value.window === '7d' ? 'access7' : 'access15'}>
-          {value.window === '7d' ? '7-Day Unlimited/Month' : '15-Day Unlimited/Month'}
+          {value.window === '7d' ? '+7-Day Access / mo' : '+15-Day Access / mo'}
         </Tag>
       );
   }

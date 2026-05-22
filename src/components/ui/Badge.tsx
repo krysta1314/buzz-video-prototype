@@ -8,8 +8,8 @@ interface BadgeProps {
 }
 
 const styles: Record<Variant, string> = {
-  popular: 'bg-accent text-white shadow-[0_0_0_4px_#fff]',
-  team: 'bg-secondary text-white shadow-[0_0_0_4px_#fff]',
+  popular: 'bg-accent text-white',
+  team: 'bg-secondary text-white',
   pill: 'bg-emerald-600 text-white',
 };
 
