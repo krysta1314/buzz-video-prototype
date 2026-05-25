@@ -3,18 +3,17 @@
 
 export type PlanId = 'free' | 'starter' | 'pro' | 'ultra';
 export type PaidPlanId = Exclude<PlanId, 'free'>;
-export type Scale = 1 | 2 | 3 | 4 | 6;
+export type Scale = 1 | 2 | 4;
 export type BillingCycle = 'monthly' | 'yearly';
 
-export const SCALES: readonly Scale[] = [1, 2, 3, 4, 6] as const;
+// Simplified to 3 tiers per feedback — only Ultra uses the slider now (Starter / Pro are fixed-price).
+export const SCALES: readonly Scale[] = [1, 2, 4] as const;
 
 /** Bulk discount applied to price when scaling up. */
 export const SCALE_DISCOUNTS: Record<Scale, number> = {
   1: 0,
   2: 0.05,
-  3: 0.10,
   4: 0.15,
-  6: 0.20,
 };
 
 export interface PlanCopy {
@@ -23,7 +22,6 @@ export interface PlanCopy {
   tagline: string;
   cta: string;
   badge?: { label: string; variant: 'popular' | 'team' };
-  features: string[];
 }
 
 export interface PaidPlanData extends PlanCopy {
@@ -36,9 +34,6 @@ export interface PaidPlanData extends PlanCopy {
   exampleImageModel: ModelId;
   /** Video model id for credits sub-example */
   exampleVideoModel: ModelId;
-  /** Premium model access window copy */
-  accessImage: string;
-  accessVideo: string;
 }
 
 export interface FreePlanData extends PlanCopy {
@@ -48,11 +43,12 @@ export interface FreePlanData extends PlanCopy {
 }
 
 // Mock subscription data — for role-preview prototype. Real app reads from /api/billing.
+// Starter intentionally mocked as monthly to demo yearly cross-sell in upgrade modal.
 export const FAKE_SUBSCRIPTION = {
-  starter: { nextChargeDate: 'May 28, 2026', nextChargeAmount: '$13.30/mo', cycle: 'yearly' as const },
-  pro:     { nextChargeDate: 'May 28, 2026', nextChargeAmount: '$34.30/mo', cycle: 'yearly' as const },
-  ultra:   { nextChargeDate: 'May 28, 2026', nextChargeAmount: '$62.30/mo', cycle: 'yearly' as const },
-} satisfies Record<PaidPlanId, { nextChargeDate: string; nextChargeAmount: string; cycle: 'monthly' | 'yearly' }>;
+  starter: { nextChargeDate: 'May 28, 2026', nextChargeAmount: '$19/mo',  cycle: 'monthly' as const, currentScale: 1 as Scale },
+  pro:     { nextChargeDate: 'May 28, 2026', nextChargeAmount: '$35/mo',  cycle: 'yearly'  as const, currentScale: 1 as Scale },
+  ultra:   { nextChargeDate: 'May 28, 2026', nextChargeAmount: '$63/mo',  cycle: 'yearly'  as const, currentScale: 1 as Scale },
+} satisfies Record<PaidPlanId, { nextChargeDate: string; nextChargeAmount: string; cycle: 'monthly' | 'yearly'; currentScale: Scale }>;
 
 export const FREE_PLAN: FreePlanData = {
   id: 'free',
@@ -61,11 +57,6 @@ export const FREE_PLAN: FreePlanData = {
   cta: 'Start for Free',
   oneTimeCredits: 500,
   exampleSub: '≈ 27 Seedream 5.0 Lite images',
-  features: [
-    'Marketing Agent',
-    'Image Generation',
-    'AI Avatars: 1',
-  ],
 };
 
 export const PAID_PLANS: Record<PaidPlanId, PaidPlanData> = {
@@ -80,17 +71,6 @@ export const PAID_PLANS: Record<PaidPlanId, PaidPlanData> = {
     baseMonthlyCredits: 1900,
     exampleImageModel: 'gpt-image-2',
     exampleVideoModel: 'seedance-2',
-    accessImage: '7-Day Unlimited/Month',
-    accessVideo: '7-Day Unlimited/Month',
-    features: [
-      'Marketing Agent',
-      'Image & Video Generation',
-      'Watermark-free Videos',
-      'Character Customization (Seedance 2.0): Unlimited',
-      'AI Avatars: Unlimited',
-      'Access Models (Image): 7-Day Unlimited/Month',
-      'Access Models (Video): 7-Day Unlimited/Month',
-    ],
   },
   pro: {
     id: 'pro',
@@ -104,15 +84,6 @@ export const PAID_PLANS: Record<PaidPlanId, PaidPlanData> = {
     baseMonthlyCredits: 4900,
     exampleImageModel: 'gpt-image-2',
     exampleVideoModel: 'seedance-2',
-    accessImage: '15-Day Unlimited/Month',
-    accessVideo: '15-Day Unlimited/Month',
-    features: [
-      'Everything in Starter',
-      '15-Day Premium Model Access per renewal',
-      'Higher credit allowance',
-      'Character Customization: Unlimited',
-      'AI Avatars: Unlimited',
-    ],
   },
   ultra: {
     id: 'ultra',
@@ -126,15 +97,6 @@ export const PAID_PLANS: Record<PaidPlanId, PaidPlanData> = {
     baseMonthlyCredits: 8900,
     exampleImageModel: 'gpt-image-2',
     exampleVideoModel: 'seedance-2',
-    accessImage: 'Full Access',
-    accessVideo: 'Full Access',
-    features: [
-      'Everything in Pro',
-      'Full Access to all premium models',
-      'Long Video Generation (Early Access)',
-      'Highest credit allowance',
-      'Priority processing',
-    ],
   },
 };
 
@@ -165,33 +127,28 @@ export interface Model {
   unitLabel: 'image' | 'video';
 }
 
+// New credits formula (per Pricing Admin): credits = ceil(costUsd × 1.80 × 100)
+// where 1.80 = 1 + markup (markup = 0.80). Previously was × 5.0.
 export const MODELS: readonly Model[] = [
   // Image
-  { id: 'seedream-4-5',    name: 'Seedream 4.5',      category: 'image', sku: 'default',          pricePerUnit: 21,   freeAccess: true,  unitLabel: 'image' },
-  { id: 'seedream-5-lite', name: 'Seedream 5.0 Lite', category: 'image', sku: 'default',          pricePerUnit: 18,   freeAccess: true,  unitLabel: 'image' },
-  { id: 'nano-banana',     name: 'Nano Banana',       category: 'image', sku: 'default',          pricePerUnit: 20,   freeAccess: false, unitLabel: 'image' },
-  { id: 'nano-banana-2',   name: 'Nano Banana 2',     category: 'image', sku: '1K',               pricePerUnit: 34,   freeAccess: false, unitLabel: 'image' },
-  { id: 'nano-banana-pro', name: 'Nano Banana Pro',   category: 'image', sku: '1K',               pricePerUnit: 68,   freeAccess: false, unitLabel: 'image' },
-  { id: 'gpt-image-2',     name: 'GPT Image 2',       category: 'image', sku: '1:1 / low',        pricePerUnit: 8,    freeAccess: false, unitLabel: 'image' },
+  { id: 'seedream-4-5',    name: 'Seedream 4.5',      category: 'image', sku: 'standard',         pricePerUnit: 8,    freeAccess: true,  unitLabel: 'image' },
+  { id: 'seedream-5-lite', name: 'Seedream 5.0 Lite', category: 'image', sku: 'standard',         pricePerUnit: 7,    freeAccess: true,  unitLabel: 'image' },
+  { id: 'nano-banana',     name: 'Nano Banana',       category: 'image', sku: 'standard',         pricePerUnit: 8,    freeAccess: false, unitLabel: 'image' },
+  { id: 'nano-banana-2',   name: 'Nano Banana 2',     category: 'image', sku: 'high-res',         pricePerUnit: 13,   freeAccess: false, unitLabel: 'image' },
+  { id: 'nano-banana-pro', name: 'Nano Banana Pro',   category: 'image', sku: 'high-res',         pricePerUnit: 25,   freeAccess: false, unitLabel: 'image' },
+  { id: 'gpt-image-2',     name: 'GPT Image 2',       category: 'image', sku: 'social-ready',     pricePerUnit: 3,    freeAccess: false, unitLabel: 'image' },
   // Video
-  { id: 'veo-3-1',         name: 'Veo 3.1',           category: 'video', sku: '720p · 8s',        pricePerUnit: 1600, freeAccess: false, unitLabel: 'video' },
-  { id: 'veo-3-1-fast',    name: 'Veo 3.1 Fast',      category: 'video', sku: '720p · 8s',        pricePerUnit: 400,  freeAccess: false, unitLabel: 'video' },
-  { id: 'seedance-1-5-pro',name: 'Seedance 1.5 Pro',  category: 'video', sku: '480p · 10s',       pricePerUnit: 58,   freeAccess: false, unitLabel: 'video' },
-  { id: 'seedance-2',      name: 'Seedance 2.0',      category: 'video', sku: '720p · 10s',       pricePerUnit: 721,  freeAccess: false, unitLabel: 'video' },
-  { id: 'seedance-2-fast', name: 'Seedance 2.0 Fast', category: 'video', sku: '480p · 10s',       pricePerUnit: 270,  freeAccess: false, unitLabel: 'video' },
-  { id: 'kling-3',         name: 'Kling 3.0',         category: 'video', sku: 'std · 5s',         pricePerUnit: 175,  freeAccess: false, unitLabel: 'video' },
+  { id: 'veo-3-1',         name: 'Veo 3.1',           category: 'video', sku: 'HD · 8s video',     pricePerUnit: 576,  freeAccess: false, unitLabel: 'video' },
+  { id: 'veo-3-1-fast',    name: 'Veo 3.1 Fast',      category: 'video', sku: 'HD · 8s video',     pricePerUnit: 144,  freeAccess: false, unitLabel: 'video' },
+  { id: 'seedance-1-5-pro',name: 'Seedance 1.5 Pro',  category: 'video', sku: 'SD · 10s video',    pricePerUnit: 21,   freeAccess: false, unitLabel: 'video' },
+  { id: 'seedance-2',      name: 'Seedance 2.0',      category: 'video', sku: 'HD · 10s video',    pricePerUnit: 260,  freeAccess: false, unitLabel: 'video' },
+  { id: 'seedance-2-fast', name: 'Seedance 2.0 Fast', category: 'video', sku: 'SD · 10s video',    pricePerUnit: 98,   freeAccess: false, unitLabel: 'video' },
+  { id: 'kling-3',         name: 'Kling 3.0',         category: 'video', sku: '5s video',          pricePerUnit: 63,   freeAccess: false, unitLabel: 'video' },
 ] as const;
 
 export const MODEL_BY_ID: Record<ModelId, Model> = Object.fromEntries(
   MODELS.map(m => [m.id, m]),
 ) as Record<ModelId, Model>;
-
-// =========== Access policies for Compare Features ===========
-
-export const ACCESS_POLICY = {
-  image: { free: 'Free Models Only', starter: '+7-Day Access / mo', pro: '+15-Day Access / mo', ultra: 'Full Access' },
-  video: { free: '✗',                starter: '+7-Day Access / mo', pro: '+15-Day Access / mo', ultra: 'Full Access' },
-} satisfies Record<ModelCategory, Record<PlanId, string>>;
 
 // =========== "Not sure which plan" guide ===========
 
@@ -216,7 +173,7 @@ export const GUIDE: GuideEntry[] = [
     coreFeatures: [
       'Marketing Agent for ad ideas and copy',
       'Image & video ad generation',
-      '7-day premium model access per renewal',
+      'All premium models except Seedance 2.0',
       'Watermark-free videos',
     ],
   },
@@ -231,7 +188,7 @@ export const GUIDE: GuideEntry[] = [
     ],
     coreFeatures: [
       'Marketing Agent for full campaign workflows',
-      '15-day premium model access per renewal',
+      'Full access to all premium models (incl. Seedance 2.0)',
       'Character Customization (Seedance 2.0)',
       'Unlimited AI Avatars',
     ],
@@ -293,11 +250,28 @@ export interface FaqItem {
 // (Answers live in src/components/sections/Faq.tsx to keep JSX in components)
 export const FAQ_QUESTIONS = [
   'What are credits and how do they work?',
+  'Is yearly billing worth it?',
   'What happens if I run out of credits?',
-  'Can I cancel my subscription anytime?',
-  'How does the Premium Model Access window work?',
+  'Can I get more credits on Ultra?',
+  'Can I cancel anytime? Am I locked in?',
+  'Which AI models are included with my plan?',
+  'Which models should I use — Standard or Premium Cinematic?',
+  'What are AI Avatars?',
+  'What is Long Video Generation (Early Access)?',
   'Can I upgrade or downgrade my plan?',
   'Do you offer refunds?',
-  'Can I use Buzz-generated content commercially?',
-  'Does Buzz support team or multi-user access?',
+  'Can I use BuzzVideo-generated content commercially?',
+  'Who owns the content I generate? Can I use it for client work?',
+  'Is my data and prompts private? Will they be used to train AI?',
+  'Do you have an API?',
+  'Can I share my plan with my team?',
 ] as const;
+
+// =========== Upgrade deltas (used by UpgradeDeltaCallout + UpgradePreviewModal) ===========
+// Credits 数字 = PAID_PLANS[to].baseMonthlyCredits - PAID_PLANS[from].baseMonthlyCredits
+// 调价后需手动同步这里
+export const UPGRADE_DELTAS: Record<string, { credits: number; unlocks: string[] }> = {
+  'starter-pro':   { credits: 3000, unlocks: ['Seedance 2.0 access', 'Technical Support'] },
+  'starter-ultra': { credits: 7000, unlocks: ['Seedance 2.0 access', 'Long Video Generation', 'Priority processing', 'Technical Support'] },
+  'pro-ultra':     { credits: 4000, unlocks: ['Long Video Generation (Early Access)', 'Priority processing'] },
+};

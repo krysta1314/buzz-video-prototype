@@ -1,5 +1,4 @@
 import {
-  ACCESS_POLICY,
   MODELS,
   PAID_PLANS,
   PAID_PLAN_ORDER,
@@ -7,6 +6,7 @@ import {
   type PaidPlanId,
 } from '@/config/pricing';
 import { BillingToggle } from '@/components/ui/BillingToggle';
+import { Button } from '@/components/ui/Button';
 import { ScalingSlider } from '@/components/ui/ScalingSlider';
 import { computeCredits, computeGenerations, computePrice } from '@/lib/compute';
 import { fmtMoney, fmtNumber } from '@/lib/format';
@@ -18,11 +18,22 @@ interface Props {
 
 const FREE_CREDITS = 500;
 
+// 模型营销分类标签：Premium Cinematic 高端电影级，其余默认 Standard 日常素材
+const PREMIUM_CINEMATIC_MODEL_IDS = new Set<string>([
+  'nano-banana',
+  'nano-banana-2',
+  'nano-banana-pro',
+  'gpt-image-2',
+  'seedance-2',
+  'seedance-2-fast',
+  'kling-3',
+]);
+
 export function CompareFeatures({ region }: Props) {
   const { cycle, scales, setCycle, setScale } = region;
   const creditsFor = (planId: PaidPlanId) => {
-    // Starter is fixed-price — always 1x regardless of stored state.
-    const effectiveScale = planId === 'starter' ? 1 : scales[planId];
+    // Starter and Pro are fixed-price — always 1x regardless of stored state.
+    const effectiveScale = (planId === 'starter' || planId === 'pro') ? 1 : scales[planId];
     return computeCredits(planId, effectiveScale, cycle);
   };
   const planColTint = (_planId: PaidPlanId) => '';
@@ -35,18 +46,18 @@ export function CompareFeatures({ region }: Props) {
       <div className="text-center mb-8">
         <h2 className="text-2xl sm:text-[28px] font-bold tracking-tight">Compare all features and plans</h2>
         <p className="mt-2 text-sm text-neutral-500">
-          Adjust each column&rsquo;s credits independently to see how many images or videos you can generate.
+          Switch billing cycle or scale up Ultra&rsquo;s credits to see how many assets each plan delivers.
         </p>
         <div className="mt-5 inline-flex">
           <BillingToggle value={cycle} onChange={setCycle} ariaLabel="Compare features billing cycle" />
         </div>
       </div>
 
-      <div className="overflow-x-auto border border-neutral-200 rounded-2xl">
+      <div id="compare-table" className="border border-neutral-200 rounded-2xl">
         <table className="w-full border-collapse min-w-[880px] text-[13px]">
           <thead>
             <tr>
-              <th className="text-left p-4 bg-neutral-50 border-b border-neutral-200 w-[200px]">Plan</th>
+              <th className="text-left p-4 bg-neutral-50 border-b border-neutral-200 w-[200px] sticky top-0 z-20">Plan</th>
               <ColHeader planId="free" />
               {PAID_PLAN_ORDER.map(planId => (
                 <PaidColHeader
@@ -97,7 +108,8 @@ export function CompareFeatures({ region }: Props) {
             <FeatureRow label="Image Generation"       values={['✓','✓','✓','✓']} planColTint={planColTint} />
             <FeatureRow label="Video Generation"       values={['✗','✓','✓','✓']} planColTint={planColTint} />
             <FeatureRow label={<>Long Video Generation <span className="text-neutral-500 text-[11px]">(Early Access)</span></>} values={['✗','✗','✗','✓']} planColTint={planColTint} />
-            <FeatureRow label="Watermark-free Videos"  values={['✗','✓','✓','✓']} planColTint={planColTint} />
+            <FeatureRow label="Watermark-free Videos"  values={['—','✓','✓','✓']} planColTint={planColTint} />
+            <FeatureRow label="Technical Support"       values={['✗','✗','✓','✓']} planColTint={planColTint} />
 
             <GroupRow label="AI Avatars & Customization" />
             <FeatureRow label="AI Avatars"             values={['1','Unlimited','Unlimited','Unlimited']} planColTint={planColTint} />
@@ -112,12 +124,14 @@ export function CompareFeatures({ region }: Props) {
 
 function ColHeader({ planId }: { planId: 'free' }) {
   return (
-    <th className="text-left p-4 bg-neutral-50 border-b border-neutral-200 min-w-[180px] align-top">
+    <th className="text-left p-4 bg-neutral-50 border-b border-neutral-200 min-w-[180px] align-top sticky top-0 z-20">
       <div className="font-bold text-[15px]">Free</div>
       <div className="text-[20px] font-bold tracking-tight mt-2">$0</div>
-      <div className="text-[11px] text-neutral-500 mt-0.5">&nbsp;</div>
-      {/* placeholder for slider height parity */}
+      <div className="text-[11px] text-neutral-500 mt-0.5">{fmtNumber(FREE_CREDITS)} credits (one-time)</div>
+      {/* placeholder for slider height parity with Ultra column */}
       <div className="invisible mt-2.5 h-[58px]" aria-hidden />
+      {/* CTA placeholder so Free column matches paid columns' button height (Free has no Compare-page CTA) */}
+      <div className="invisible mt-3 h-[44px]" aria-hidden />
       <span className="sr-only">{planId}</span>
     </th>
   );
@@ -132,14 +146,16 @@ interface PaidColHeaderProps {
 
 function PaidColHeader({ planId, cycle, scale, onScaleChange }: PaidColHeaderProps) {
   const plan = PAID_PLANS[planId];
-  // Starter is fixed-price — no slider, always 1x.
-  const isFixedPrice = planId === 'starter';
+  // Starter and Pro are fixed-price — only Ultra has the slider.
+  const isFixedPrice = planId === 'starter' || planId === 'pro';
   const effectiveScale = isFixedPrice ? (1 as import('@/config/pricing').Scale) : scale;
   const price = computePrice(planId, effectiveScale, cycle);
   const isYearly = cycle === 'yearly';
   const tint = '';
+  // 按钮色匹配 Plan Cards 区配色（Starter dark / Pro accent / Ultra secondary）
+  const ctaVariant = planId === 'starter' ? 'dark' : planId === 'pro' ? 'accent' : 'secondary';
   return (
-    <th className={`text-left p-4 bg-neutral-50 border-b border-neutral-200 min-w-[180px] align-top ${tint}`}>
+    <th className={`text-left p-4 bg-neutral-50 border-b border-neutral-200 min-w-[180px] align-top sticky top-0 z-20 ${tint}`}>
       <div className="font-bold text-[15px]">
         {plan.name}
         {plan.badge && (
@@ -168,16 +184,41 @@ function PaidColHeader({ planId, cycle, scale, onScaleChange }: PaidColHeaderPro
       <div className="text-[11px] text-neutral-500 mt-0.5 min-h-[14px]">
         {isYearly ? `${fmtMoney(price.annualTotal)} billed annually` : ' '}
       </div>
-      {!isFixedPrice && (
+      {!isFixedPrice ? (
         <div className="mt-2.5">
           <ScalingSlider
             value={scale}
             onChange={onScaleChange}
             ariaLabel={`${plan.name} compare column credit multiplier`}
+            tickFormat={(s) => fmtNumber(computeCredits(planId, s, cycle))}
           />
         </div>
+      ) : (
+        // Starter / Pro: slider placeholder so CTA aligns with Ultra column
+        <div className="invisible mt-2.5 h-[58px]" aria-hidden />
       )}
+      <div className="mt-3">
+        {/* 占位 CTA — 暂时点击无反应，未来接 Stripe Checkout 直跳 */}
+        <Button variant={ctaVariant} onClick={e => e.preventDefault()}>
+          {plan.cta}
+        </Button>
+      </div>
     </th>
+  );
+}
+
+function ModelTag({ isPremium }: { isPremium: boolean }) {
+  if (isPremium) {
+    return (
+      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 whitespace-nowrap">
+        Premium Cinematic Assets
+      </span>
+    );
+  }
+  return (
+    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 whitespace-nowrap">
+      Standard Assets
+    </span>
   );
 }
 
@@ -223,25 +264,17 @@ interface ModelGroupProps {
 }
 
 function ModelGroup({ category, models, creditsFor, planColTint }: ModelGroupProps) {
-  const label = category === 'image' ? 'Access Models (Image)' : 'Access Models (Video)';
-  const policy = ACCESS_POLICY[category];
+  const label = category === 'image' ? 'Image Models' : 'Video Models';
   return (
     <>
       <GroupRow label={label} />
-      <tr>
-        <td className="p-4 border-b border-neutral-200">
-          <div className="font-medium">Access Policy</div>
-          <div className="text-[11px] text-neutral-500 mt-0.5">Premium model availability per billing cycle</div>
-        </td>
-        <td className="p-4 border-b border-neutral-200">{policy.free}</td>
-        <td className={`p-4 border-b border-neutral-200 ${planColTint('starter')}`}>{policy.starter}</td>
-        <td className={`p-4 border-b border-neutral-200 ${planColTint('pro')}`}>{policy.pro}</td>
-        <td className={`p-4 border-b border-neutral-200 ${planColTint('ultra')}`}>{policy.ultra}</td>
-      </tr>
       {models.map(m => (
         <tr key={m.id}>
           <td className="p-4 border-b border-neutral-200">
-            <div className="font-medium text-ink">{m.name}</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-ink">{m.name}</span>
+              <ModelTag isPremium={PREMIUM_CINEMATIC_MODEL_IDS.has(m.id)} />
+            </div>
             <div className="text-[11px] text-neutral-500 mt-0.5">
               {m.sku} · {fmtNumber(m.pricePerUnit)} credits/{m.unitLabel}
             </div>

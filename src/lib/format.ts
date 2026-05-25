@@ -3,9 +3,8 @@ export function fmtNumber(n: number): string {
 }
 
 export function fmtMoney(n: number): string {
-  const isInt = Number.isInteger(n);
-  return '$' + n.toLocaleString('en-US', {
-    minimumFractionDigits: isInt ? 0 : 2,
-    maximumFractionDigits: 2,
+  return '$' + Math.ceil(n).toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   });
 }

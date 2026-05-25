@@ -5,9 +5,12 @@ interface ScalingSliderProps {
   onChange: (s: Scale) => void;
   /** Aria-label for the slider (distinguishes between regions) */
   ariaLabel: string;
+  /** Format function for each tick label. Defaults to "Nx" (e.g. "2x"). */
+  tickFormat?: (s: Scale) => string;
 }
 
-export function ScalingSlider({ value, onChange, ariaLabel }: ScalingSliderProps) {
+export function ScalingSlider({ value, onChange, ariaLabel, tickFormat }: ScalingSliderProps) {
+  const formatTick = tickFormat ?? ((s: Scale) => `${s}x`);
   const idx = SCALES.indexOf(value);
   return (
     <div className="text-xs">
@@ -59,7 +62,7 @@ export function ScalingSlider({ value, onChange, ariaLabel }: ScalingSliderProps
       />
       <div className="flex justify-between text-[10px] text-neutral-400 mt-1.5">
         {SCALES.map(s => (
-          <span key={s} className={s === value ? 'font-bold text-ink' : ''}>{s}x</span>
+          <span key={s} className={s === value ? 'font-bold text-ink' : ''}>{formatTick(s)}</span>
         ))}
       </div>
     </div>

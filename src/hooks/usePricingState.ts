@@ -29,8 +29,9 @@ export interface PricingState {
   cmp: RegionState;
 }
 
-// Starter is a fixed-price plan (no slider) — always 1. Pro/Ultra default to 2x per PRD §11.
-const DEFAULT_SCALES: ScaleMap = { starter: 1, pro: 2, ultra: 2 };
+// Starter and Pro are fixed-price plans (no slider) — always 1.
+// Ultra defaults to 1x (clean entry view); user can scale up via slider.
+const DEFAULT_SCALES: ScaleMap = { starter: 1, pro: 1, ultra: 1 };
 
 export function usePricingState(): PricingState {
   const cards = useRegion(DEFAULT_SCALES);

@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import {
+  FAKE_SUBSCRIPTION,
   FREE_PLAN,
   PAID_PLANS,
   MODEL_BY_ID,
   SCALE_DISCOUNTS,
+  UPGRADE_DELTAS,
   type BillingCycle,
   type PaidPlanId,
   type Scale,
@@ -12,6 +15,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { InfoIcon } from '@/components/ui/InfoIcon';
 import { ScalingSlider } from '@/components/ui/ScalingSlider';
+import { UpgradePreviewModal, type UpgradeVariant } from '@/components/ui/UpgradePreviewModal';
+import { DowngradeChurnModal } from '@/components/ui/DowngradeChurnModal';
 import { FeatureMatrix } from './FeatureMatrix';
 import { computeCredits, computeGenerations, computePrice } from '@/lib/compute';
 import { fmtMoney, fmtNumber } from '@/lib/format';
@@ -23,11 +28,12 @@ import { fmtMoney, fmtNumber } from '@/lib/format';
 const CARD_BASE =
   'relative bg-white rounded-2xl p-6 flex flex-col gap-3.5';
 
+// 锁死高度以保证 4 张卡片每一行严格对齐（CTA、Save、KEY FEATURES 都齐平）
 const ROW = {
-  header: 'min-h-[60px]',
-  price: 'min-h-[64px]',
-  credits: 'min-h-[180px]',
-  save: 'min-h-[16px]',
+  header: 'h-[72px]',
+  price: 'h-[56px]',
+  credits: 'h-[180px]',
+  save: 'h-[18px]',
 } as const;
 
 const variantClasses = {
@@ -64,7 +70,9 @@ interface PaidCardProps {
 
 export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole }: PaidCardProps) {
   const plan = PAID_PLANS[planId];
-  const isFixedPrice = planId === 'starter';
+  // Starter and Pro are fixed-price plans — no scaling slider, always 1x.
+  // Only Ultra has the slider for power users / agencies.
+  const isFixedPrice = planId === 'starter' || planId === 'pro';
   const effectiveScale: Scale = isFixedPrice ? 1 : scale;
   const price = computePrice(planId, effectiveScale, cycle);
   const credits = computeCredits(planId, effectiveScale, cycle);
@@ -78,6 +86,31 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
   const ctaVariant = getCtaVariant(currentRole, planId);
   const isCurrent = ctaVariant === 'current';
 
+  // Volume upgrade: 当前 Ultra 用户拖滑块到比订阅倍数更高的档位
+  const currentSub = currentRole !== 'free' ? FAKE_SUBSCRIPTION[currentRole] : null;
+  const isVolumeUpgrade =
+    isCurrent &&
+    !isFixedPrice &&
+    currentSub !== null &&
+    effectiveScale > currentSub.currentScale;
+
+  // Upgrade preview modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  // 当前 role 是哪个付费 plan（free user 升级时假设从 starter 走，但 free 不该弹 modal — 走默认 CTA）
+  const modalFrom: PaidPlanId | null =
+    currentRole !== 'free' ? currentRole : null;
+  const modalVariant: UpgradeVariant = isVolumeUpgrade ? 'volume' : 'tier';
+
+  const handleUpgradeClick = () => {
+    if (modalFrom) setModalOpen(true);
+  };
+
+  // Downgrade churn modal state — 降级按钮点击触发拦截
+  const [churnOpen, setChurnOpen] = useState(false);
+  const handleDowngradeClick = () => {
+    if (modalFrom) setChurnOpen(true);
+  };
+
   return (
     <article
       className={`${CARD_BASE} ${variantClasses[planId]}`}
@@ -88,6 +121,17 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
         <CurrentPlanBadge planId={planId} />
       ) : (
         plan.badge && <Badge variant={plan.badge.variant}>{plan.badge.label}</Badge>
+      )}
+
+      {/* 升级差量 callout — 仅订阅用户看高 tier 卡时显示，配色跟 plan tier 走 */}
+      {ctaVariant === 'upgrade' && currentRole !== 'free' && (
+        <UpgradeDeltaCallout
+          from={currentRole as PaidPlanId}
+          to={planId}
+          tone={planId}
+          cycle={cycle}
+          toScale={effectiveScale}
+        />
       )}
 
       <header className={ROW.header}>
@@ -115,7 +159,7 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
       <div className={ROW.price}>
         <div className="flex items-baseline gap-2 flex-wrap">
           {price.displayPrice < price.referencePrice && (
-            <span className="text-[23px] text-neutral-400 line-through font-bold tracking-tight">
+            <span className="text-[28px] text-neutral-400 line-through font-bold tracking-tight">
               {fmtMoney(price.referencePrice)}
             </span>
           )}
@@ -141,13 +185,18 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
         </div>
         {!isFixedPrice && (
           <div className="mt-auto pt-2">
-            <ScalingSlider value={scale} onChange={onScaleChange} ariaLabel={`${plan.name} credit multiplier`} />
+            <ScalingSlider
+              value={scale}
+              onChange={onScaleChange}
+              ariaLabel={`${plan.name} credit multiplier`}
+              tickFormat={(s) => fmtNumber(computeCredits(planId, s, cycle))}
+            />
           </div>
         )}
         {isFixedPrice && (
           <div className="mt-auto pt-2">
             <div
-              className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-medium text-neutral-700 border border-white/70 shadow-sm backdrop-blur-md"
+              className="flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[13px] font-medium text-neutral-700 border border-white/70 shadow-sm backdrop-blur-md whitespace-nowrap"
               style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.55) 100%)' }}
             >
               <span aria-hidden className="text-emerald-600 font-bold leading-none">✓</span>
@@ -157,7 +206,25 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
         )}
       </div>
 
-      <RoleAwareCTA variant={ctaVariant} planId={planId} planName={plan.name} fallbackCta={plan.cta} />
+      {isVolumeUpgrade && currentSub ? (
+        <VolumeUpgradeCTA
+          fromCredits={computeCredits(planId, currentSub.currentScale, cycle)}
+          toCredits={credits}
+          fromPrice={computePrice(planId, currentSub.currentScale, cycle).displayPrice}
+          toPrice={price.displayPrice}
+          isYearly={isYearly}
+          onClick={handleUpgradeClick}
+        />
+      ) : (
+        <RoleAwareCTA
+          variant={ctaVariant}
+          planId={planId}
+          planName={plan.name}
+          fallbackCta={plan.cta}
+          onUpgradeClick={handleUpgradeClick}
+          onDowngradeClick={handleDowngradeClick}
+        />
+      )}
 
       <div className={`text-center text-xs text-neutral-500 ${ROW.save}`}>
         {isYearly && !isCurrent && (
@@ -168,6 +235,30 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
       </div>
 
       <FeatureMatrix planId={planId} />
+
+      {/* Upgrade preview modal */}
+      {modalFrom && (
+        <UpgradePreviewModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          from={modalFrom}
+          to={planId}
+          variant={modalVariant}
+          fromScale={currentSub?.currentScale ?? 1}
+          toScale={effectiveScale}
+          cycle={cycle}
+        />
+      )}
+
+      {/* Downgrade churn modal */}
+      {modalFrom && (
+        <DowngradeChurnModal
+          open={churnOpen}
+          onClose={() => setChurnOpen(false)}
+          from={modalFrom}
+          to={planId}
+        />
+      )}
     </article>
   );
 }
@@ -196,9 +287,11 @@ interface RoleAwareCTAProps {
   planId: PaidPlanId;
   planName: string;
   fallbackCta: string;
+  onUpgradeClick: () => void;
+  onDowngradeClick: () => void;
 }
 
-function RoleAwareCTA({ variant, planId, planName, fallbackCta }: RoleAwareCTAProps) {
+function RoleAwareCTA({ variant, planId, planName, fallbackCta, onUpgradeClick, onDowngradeClick }: RoleAwareCTAProps) {
   if (variant === 'current') {
     return (
       <div
@@ -210,20 +303,135 @@ function RoleAwareCTA({ variant, planId, planName, fallbackCta }: RoleAwareCTAPr
     );
   }
   if (variant === 'upgrade') {
-    return <Button variant={ctaVariants[planId]}>Upgrade to {planName}</Button>;
+    return (
+      <Button
+        variant={ctaVariants[planId]}
+        onClick={e => { e.preventDefault(); onUpgradeClick(); }}
+      >
+        Upgrade to {planName}
+      </Button>
+    );
   }
   if (variant === 'downgrade') {
+    // 文案用 plan 默认 CTA（Get Starter / Get Pro 等），不显式说"Downgrade"
+    // 点击仍触发 churn modal 拦截
     return (
-      <a
-        href="#"
+      <button
+        type="button"
+        onClick={onDowngradeClick}
         className="block w-full text-center px-4 py-3 rounded-[10px] font-semibold text-sm border border-neutral-300 text-neutral-600 bg-white hover:bg-neutral-50 transition-colors"
       >
-        Downgrade to {planName}
-      </a>
+        {fallbackCta}
+      </button>
     );
   }
   // default — free user
   return <Button variant={ctaVariants[planId]}>{fallbackCta}</Button>;
+}
+
+/** Ultra 当前用户拖滑块到更高倍数时的 CTA — 紫色 active + delta 小字 */
+interface VolumeUpgradeCTAProps {
+  fromCredits: number;
+  toCredits: number;
+  fromPrice: number;
+  toPrice: number;
+  isYearly: boolean;
+  onClick: () => void;
+}
+
+function VolumeUpgradeCTA({ fromCredits, toCredits, fromPrice, toPrice, isYearly, onClick }: VolumeUpgradeCTAProps) {
+  const creditsDelta = toCredits - fromCredits;
+  const priceDelta = toPrice - fromPrice;
+  return (
+    <div className="flex flex-col gap-1">
+      <Button
+        variant="secondary"
+        onClick={e => { e.preventDefault(); onClick(); }}
+      >
+        Update Subscription
+      </Button>
+      <div className="text-center text-[11px] text-neutral-500">
+        +{fmtNumber(creditsDelta)} credits/{isYearly ? 'yr' : 'mo'} · +{fmtMoney(priceDelta)}/mo
+      </div>
+    </div>
+  );
+}
+
+/** 升级差量 callout — 显示在高 tier 卡顶部，让现订阅用户看清"升级多得到什么" */
+interface UpgradeDeltaCalloutProps {
+  from: PaidPlanId;
+  to: PaidPlanId;
+  /** 决定 callout 配色，跟 plan tier 主色保持一致 */
+  tone: PaidPlanId;
+  /** 页面当前选择的 cycle，决定 credits 显示单位（per month / per year）*/
+  cycle: BillingCycle;
+  /** 目标 plan 的 scale（仅 Ultra 滑块可变；其他固定 1）*/
+  toScale: Scale;
+}
+
+// 每个 tier 的 callout 配色（背景 / 边框 / 标题字 / 正文字 / 副标字 / + 号字）
+const CALLOUT_THEME: Record<PaidPlanId, {
+  bg: string; border: string; title: string; body: string; sub: string; plus: string;
+}> = {
+  starter: {
+    bg: 'bg-neutral-100',
+    border: 'border-neutral-300',
+    title: 'text-neutral-700',
+    body: 'text-neutral-900',
+    sub: 'text-neutral-500',
+    plus: 'text-neutral-600',
+  },
+  pro: {
+    bg: 'bg-orange-50',
+    border: 'border-orange-200',
+    title: 'text-orange-700',
+    body: 'text-orange-950',
+    sub: 'text-orange-700/70',
+    plus: 'text-orange-600',
+  },
+  ultra: {
+    bg: 'bg-violet-50',
+    border: 'border-violet-200',
+    title: 'text-violet-700',
+    body: 'text-violet-900',
+    sub: 'text-violet-700/70',
+    plus: 'text-violet-600',
+  },
+};
+
+function UpgradeDeltaCallout({ from, to, tone, cycle, toScale }: UpgradeDeltaCalloutProps) {
+  const delta = UPGRADE_DELTAS[`${from}-${to}`];
+  if (!delta) return null;
+  // 跟随 page cycle + 目标 scale 动态计算，与下方 credits chip 显示口径一致
+  // source 用 1x（Starter/Pro 固定 1x；不是 Ultra 不会进这个 callout）
+  const targetCredits = computeCredits(to, toScale, cycle);
+  const sourceCredits = computeCredits(from, 1, cycle);
+  const creditsDelta = targetCredits - sourceCredits;
+  const period = cycle === 'yearly' ? 'year' : 'month';
+  const t = CALLOUT_THEME[tone];
+  return (
+    <div className={`rounded-lg p-3 ${t.bg}`}>
+      <div className={`text-[11px] font-bold uppercase tracking-wider ${t.title} mb-1.5 flex items-center gap-1`}>
+        <span aria-hidden>✨</span>
+        Upgrade unlocks
+      </div>
+      <ul className={`space-y-0.5 text-[12px] ${t.body} leading-snug`}>
+        <li className="flex items-start gap-1.5">
+          <span className={`${t.plus} font-bold leading-none mt-0.5`}>+</span>
+          <span>
+            <b>{fmtNumber(targetCredits)} credits</b> per {period}{' '}
+            <span className={t.sub}>({fmtNumber(creditsDelta)} more than your current plan)</span>
+          </span>
+        </li>
+        {delta.unlocks.map(u => (
+          <li key={u} className="flex items-start gap-1.5">
+            <span className={`${t.plus} font-bold leading-none mt-0.5`}>+</span>
+            <span>{u}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 export function FreePlanCard() {

@@ -13,7 +13,6 @@ export type AccessValue =
   | { kind: 'yes' }
   | { kind: 'no' }
   | { kind: 'value'; label: string }
-  | { kind: 'window'; window: '7d' | '15d'; creditsApply: boolean }
   | { kind: 'full' };
 
 export interface FeatureRow {
@@ -29,14 +28,18 @@ export interface FeatureSection {
 const yes: AccessValue = { kind: 'yes' };
 const no: AccessValue = { kind: 'no' };
 const unlimited: AccessValue = { kind: 'value', label: 'Unlimited' };
-const w7: AccessValue = { kind: 'window', window: '7d', creditsApply: true };
-const w15: AccessValue = { kind: 'window', window: '15d', creditsApply: true };
 const full: AccessValue = { kind: 'full' };
 
-/** Premium model row: gated for Free, windowed for Starter/Pro, full for Ultra. */
+/** Premium model row: gated for Free; full access for Starter / Pro / Ultra. */
 const premium = (label: string): FeatureRow => ({
   label,
-  values: { free: no, starter: w7, pro: w15, ultra: full },
+  values: { free: no, starter: full, pro: full, ultra: full },
+});
+
+/** Premium model row with Starter exception (Seedance 2.0 only on Pro and Ultra). */
+const premiumProUltraOnly = (label: string): FeatureRow => ({
+  label,
+  values: { free: no, starter: no, pro: full, ultra: full },
 });
 
 export const FEATURE_SECTIONS: FeatureSection[] = [
@@ -48,12 +51,13 @@ export const FEATURE_SECTIONS: FeatureSection[] = [
       { label: 'Video Generation',                         values: { free: no,  starter: yes, pro: yes, ultra: yes } },
       { label: 'Long Video Generation (Early Access)',     values: { free: no,  starter: no,  pro: no,  ultra: yes } },
       { label: 'No Watermark',                             values: { free: no,  starter: yes, pro: yes, ultra: yes } },
+      { label: 'Technical Support',                        values: { free: no,  starter: no,  pro: yes, ultra: yes } },
       { label: 'Character Customization (Seedance 2.0)',   values: { free: no,  starter: unlimited, pro: unlimited, ultra: unlimited } },
       { label: 'AI Avatars',                               values: { free: { kind: 'value', label: '10' }, starter: unlimited, pro: unlimited, ultra: unlimited } },
     ],
   },
   {
-    title: 'Access Models (Image)',
+    title: 'Image Models',
     rows: [
       { label: 'Seedream 4.5',      values: { free: full, starter: full, pro: full, ultra: full } },
       { label: 'Seedream 5.0 Lite', values: { free: full, starter: full, pro: full, ultra: full } },
@@ -64,12 +68,12 @@ export const FEATURE_SECTIONS: FeatureSection[] = [
     ],
   },
   {
-    title: 'Access Models (Video)',
+    title: 'Video Models',
     rows: [
       premium('Veo 3.1'),
       premium('Veo 3.1 Fast'),
       premium('Seedance 1.5 Pro'),
-      premium('Seedance 2.0'),
+      premiumProUltraOnly('Seedance 2.0'),
       premium('Seedance 2.0 Fast'),
       premium('Kling 3.0'),
     ],

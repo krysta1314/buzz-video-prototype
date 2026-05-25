@@ -32,8 +32,6 @@ export function PlanCards({ region, role }: PlanCardsProps) {
         ))}
       </section>
       <ul className="text-[11px] text-neutral-500 mt-5 max-w-[920px] leading-relaxed list-disc pl-4 space-y-1">
-        <li>&ldquo;Month&rdquo; in <code className="text-[11px]">X-Day Unlimited/Month</code> refers to your subscription cycle (starting from your purchase or renewal date), not the calendar month.</li>
-        <li>Usage during the access window consumes credits.</li>
         <li>Yearly plans deliver all credits upfront.</li>
         <li>Credits reset at the beginning of each billing cycle.</li>
       </ul>
