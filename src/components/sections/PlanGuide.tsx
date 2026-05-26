@@ -33,7 +33,7 @@ const QUESTION_TEXT: Record<'q1' | 'q2' | 'q3', { title: string; key: keyof Answ
     title: 'Do you need Seedance 2.0 (cinematic-quality video)?',
     key: 'seedance',
     options: [
-      { value: 'yes',   label: 'Yes — for hero ads' },
+      { value: 'yes',   label: 'Yes' },
       { value: 'maybe', label: 'Maybe occasionally' },
       { value: 'no',    label: 'No, I focus on images' },
     ],

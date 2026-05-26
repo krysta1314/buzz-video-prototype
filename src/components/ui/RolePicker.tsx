@@ -4,6 +4,8 @@ import type { UserRole } from '@/hooks/useUserRole';
 interface RolePickerProps {
   role: UserRole;
   setRole: (r: UserRole) => void;
+  /** 可选:点击展开卡片顶部的 demo 入口时调用 */
+  onDemoClick?: () => void;
 }
 
 const ROLES: { id: UserRole; label: string }[] = [
@@ -17,7 +19,7 @@ const ROLES: { id: UserRole; label: string }[] = [
  * Floating dev tool — switch user identity to preview each role's UI.
  * Bottom-right fixed. Minimizable.
  */
-export function RolePicker({ role, setRole }: RolePickerProps) {
+export function RolePicker({ role, setRole, onDemoClick }: RolePickerProps) {
   const [open, setOpen] = useState(true);
 
   if (!open) {
@@ -37,11 +39,24 @@ export function RolePicker({ role, setRole }: RolePickerProps) {
   }
 
   return (
-    <div
-      role="region"
-      aria-label="Role preview selector"
-      className="fixed bottom-4 right-4 z-50 bg-ink text-white rounded-xl shadow-2xl p-3 min-w-[260px]"
-    >
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+      {/* Demo 入口 — 浮在 RolePicker 卡片上方,独立 pill */}
+      {onDemoClick && (
+        <button
+          type="button"
+          onClick={onDemoClick}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white border border-neutral-300 shadow-lg text-[12px] font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
+        >
+          <span aria-hidden>🔔</span>
+          Credits Warning Demo
+        </button>
+      )}
+
+      <div
+        role="region"
+        aria-label="Role preview selector"
+        className="bg-ink text-white rounded-xl shadow-2xl p-3 min-w-[260px]"
+      >
       <div className="flex items-center justify-between mb-2.5">
         <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400">
           Preview as
@@ -79,6 +94,7 @@ export function RolePicker({ role, setRole }: RolePickerProps) {
       </div>
       <div className="mt-2.5 text-[10px] text-neutral-500 leading-tight">
         Dev tool · Switch user identity to preview each role&rsquo;s UI
+      </div>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { usePricingState } from '@/hooks/usePricingState';
 import { useUserRole } from '@/hooks/useUserRole';
 import { PromoBanner } from '@/components/sections/PromoBanner';
@@ -8,10 +9,13 @@ import { CompareFeatures } from '@/components/sections/CompareFeatures';
 import { PlanGuide } from '@/components/sections/PlanGuide';
 import { Faq } from '@/components/sections/Faq';
 import { RolePicker } from '@/components/ui/RolePicker';
+import { CreditsWarningDemo } from '@/components/demos/CreditsWarningDemo';
 
 export default function App() {
   const state = usePricingState();
   const { role, setRole } = useUserRole();
+  // demo 开关 state 上提到 App,让 RolePicker 内的按钮也能触发
+  const [demoOpen, setDemoOpen] = useState(false);
 
   return (
     <>
@@ -26,7 +30,8 @@ export default function App() {
         <PlanGuide />
         <Faq />
       </main>
-      <RolePicker role={role} setRole={setRole} />
+      <RolePicker role={role} setRole={setRole} onDemoClick={() => setDemoOpen(true)} />
+      <CreditsWarningDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
     </>
   );
 }
