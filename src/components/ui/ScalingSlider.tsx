@@ -36,7 +36,7 @@ export function ScalingSlider({ value, onChange, ariaLabel, tickFormat }: Scalin
               }}
               className="absolute top-0 text-[9px] font-bold text-white rounded px-1.5 py-px leading-tight whitespace-nowrap tracking-wide"
             >
-              −{Math.round(discount * 100)}%
+              {Math.round(discount * 100)}% off
             </span>
           );
         })}

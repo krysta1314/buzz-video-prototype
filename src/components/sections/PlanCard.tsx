@@ -137,6 +137,22 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
       <header className={ROW.header}>
         <div className="flex items-center gap-2 flex-wrap">
           <h3 id={`plan-${planId}-name`} className="text-2xl font-bold tracking-tight">{plan.name}</h3>
+          {/* Free 用户看 Yearly 时,标题旁强提示 Save 30% — 跟 bulk discount chip 同样的红色斜切样式 */}
+          {currentRole === 'free' && isYearly && (
+            <span
+              className="inline-flex items-center text-[13px] font-extrabold text-white px-3 py-1 leading-none tracking-wider"
+              style={{
+                background: 'linear-gradient(135deg, #ff0051 0%, #ff3d7a 100%)',
+                transform: 'skewX(-14deg)',
+                boxShadow: '0 4px 12px rgba(255, 0, 81, 0.28)',
+                borderRadius: '4px',
+              }}
+            >
+              <span style={{ transform: 'skewX(14deg)', display: 'inline-block' }}>
+                Save 30%
+              </span>
+            </span>
+          )}
           {SCALE_DISCOUNTS[effectiveScale] > 0 && (
             <span
               className="inline-flex items-center text-[13px] font-extrabold text-white px-3 py-1 leading-none tracking-wider"

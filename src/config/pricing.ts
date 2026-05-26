@@ -12,8 +12,8 @@ export const SCALES: readonly Scale[] = [1, 2, 4] as const;
 /** Bulk discount applied to price when scaling up. */
 export const SCALE_DISCOUNTS: Record<Scale, number> = {
   1: 0,
-  2: 0.05,
-  4: 0.15,
+  2: 0.33,
+  4: 0.40,
 };
 
 export interface PlanCopy {
