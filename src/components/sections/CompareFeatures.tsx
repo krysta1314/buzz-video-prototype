@@ -53,7 +53,8 @@ export function CompareFeatures({ region }: Props) {
         </div>
       </div>
 
-      <div id="compare-table" className="border border-neutral-200 rounded-2xl">
+      {/* mobile: 横滑(sticky 失效,可接受);lg+: 无 overflow,sticky thead 工作 */}
+      <div id="compare-table" className="border border-neutral-200 rounded-2xl overflow-x-auto lg:overflow-visible">
         <table className="w-full border-collapse min-w-[880px] text-[13px]">
           <thead>
             <tr>

@@ -28,7 +28,7 @@ export function RolePicker({ role, setRole, onDemoClick }: RolePickerProps) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open role preview"
-        className="fixed bottom-4 right-4 z-50 w-10 h-10 rounded-full bg-ink text-white shadow-lg hover:scale-105 transition-transform flex items-center justify-center"
+        className="hidden md:flex fixed bottom-4 right-4 z-50 w-10 h-10 rounded-full bg-ink text-white shadow-lg hover:scale-105 transition-transform items-center justify-center"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <circle cx="12" cy="8" r="4" />
@@ -39,7 +39,7 @@ export function RolePicker({ role, setRole, onDemoClick }: RolePickerProps) {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+    <div className="hidden md:flex fixed bottom-4 right-4 z-50 flex-col items-end gap-2">
       {/* Demo 入口 — 浮在 RolePicker 卡片上方,独立 pill */}
       {onDemoClick && (
         <button

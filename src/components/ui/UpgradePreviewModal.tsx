@@ -107,7 +107,7 @@ export function UpgradePreviewModal({
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 pb-4 border-b border-neutral-100">
+        <div className="flex items-start justify-between p-5 pb-4 sm:p-6 sm:pb-4 border-b border-neutral-100">
           <div>
             <h2 id="upgrade-modal-title" className="text-xl font-bold tracking-tight">{title}</h2>
             <p className="mt-1 text-[12px] text-neutral-500">
@@ -124,7 +124,7 @@ export function UpgradePreviewModal({
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-5 sm:p-6 space-y-5">
           {/* 立即扣新档全额（R3）— 顶部主数字，无标题 */}
           <section>
             <div className="flex items-baseline gap-2">

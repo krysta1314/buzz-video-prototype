@@ -30,10 +30,10 @@ const CARD_BASE =
 
 // 锁死高度以保证 4 张卡片每一行严格对齐（CTA、Save、KEY FEATURES 都齐平）
 const ROW = {
-  header: 'h-[72px]',
-  price: 'h-[56px]',
-  credits: 'h-[180px]',
-  save: 'h-[18px]',
+  header: 'min-h-[72px] sm:h-[72px]',
+  price: 'min-h-[56px] sm:h-[56px]',
+  credits: 'min-h-[180px] sm:h-[180px]',
+  save: 'min-h-[18px] sm:h-[18px]',
 } as const;
 
 const variantClasses = {

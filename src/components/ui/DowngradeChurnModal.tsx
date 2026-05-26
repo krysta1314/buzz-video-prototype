@@ -57,7 +57,7 @@ export function DowngradeChurnModal({ open, onClose, from, to }: Props) {
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 pb-4 border-b border-neutral-100">
+        <div className="flex items-start justify-between p-5 pb-4 sm:p-6 sm:pb-4 border-b border-neutral-100">
           <div>
             <h2 id="churn-modal-title" className="text-xl font-bold tracking-tight">
               Before you downgrade
@@ -76,7 +76,7 @@ export function DowngradeChurnModal({ open, onClose, from, to }: Props) {
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-5 sm:p-6 space-y-5">
           {/* You'll lose */}
           {losses && (
             <section className="rounded-xl p-4 border border-amber-200 bg-amber-50">

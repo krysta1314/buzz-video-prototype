@@ -228,7 +228,7 @@ export function CreditsWarningDemo({ open, onClose }: CreditsWarningDemoProps) {
   const pct = threshold;
 
   return (
-    <div className="fixed bottom-[220px] right-6 z-30 flex flex-col gap-3 items-end">
+    <div className="hidden md:flex fixed bottom-[220px] right-6 z-30 flex-col gap-3 items-end">
       {/* Control Panel - 跟 mock card 在同一列,排在上面 */}
       <div
         className="w-[340px] rounded-2xl bg-white border border-neutral-200 shadow-2xl p-4"
