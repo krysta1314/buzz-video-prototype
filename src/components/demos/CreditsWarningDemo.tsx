@@ -16,6 +16,19 @@ interface RoleConfig {
   upgradeLabel: string;
   /** 周期倒计时上下文(显示在 progress bar 下方,小灰字)*/
   renewalCopy: string;
+  /** 升级目标的营销信息(用于卡片内 deliverables / anchor price / unlocks / annual offer)*/
+  upgrade: {
+    /** 目标 plan 名称(e.g. "Starter") */
+    targetName: string;
+    /** 目标 plan monthly 起步价(e.g. "$14/mo") — 年付月均,push 心智锚定 */
+    anchorPrice: string;
+    /** 真实可生成数量(从抽象 credits 翻译成营销可感知的产出) */
+    deliverables: string;
+    /** 3 个核心 unlock(emoji + 短文案) */
+    unlocks: { icon: string; label: string }[];
+    /** 年付选项文案(下方文字链),null 表示不显示 */
+    annualOffer: string | null;
+  };
   // 三档文案
   copy: Record<DemoThreshold, { title: string; value: string }>;
 }
@@ -26,18 +39,29 @@ const ROLES: Record<DemoRole, RoleConfig> = {
     total: 500,
     upgradeLabel: 'Upgrade to Starter →',
     renewalCopy: 'Free credits don’t refill',
+    upgrade: {
+      targetName: 'Starter',
+      anchorPrice: 'just $14/mo',
+      deliverables: '≈ 633 social images or 13 HD video ads / month',
+      unlocks: [
+        { icon: '🚫', label: 'No watermarks' },
+        { icon: '🎬', label: 'All video models' },
+        { icon: '👥', label: 'Unlimited AI Avatars' },
+      ],
+      annualOffer: 'Or upgrade annually and get 3.6 months free ($14/mo)',
+    },
     copy: {
       50: {
         title: "You're halfway there",
-        value: 'Free comes with 500 one-time credits. Upgrade anytime for monthly refills.',
+        value: 'Subscribe to keep creating — Starter starts at just $14/mo and drops 1,900 fresh credits into your account every month.',
       },
       80: {
         title: 'Only 100 credits left',
-        value: 'Subscribe to keep creating — Starter gets you 1,900 credits/mo.',
+        value: 'Subscribe to keep creating — Starter starts at just $14/mo and drops 1,900 fresh credits monthly.',
       },
       100: {
         title: 'Free credits used up',
-        value: 'Subscribe to a paid plan to continue. Starter from $14/mo.',
+        value: 'Starter starts at just $14/mo and drops 1,900 fresh credits into your account instantly.',
       },
     },
   },
@@ -46,18 +70,29 @@ const ROLES: Record<DemoRole, RoleConfig> = {
     total: 1900,
     upgradeLabel: 'Upgrade to Pro →',
     renewalCopy: 'Renews in 14 days',
+    upgrade: {
+      targetName: 'Pro',
+      anchorPrice: 'just $35/mo',
+      deliverables: '≈ 1,633 social images or 18 Seedance 2.0 videos / month',
+      unlocks: [
+        { icon: '🎬', label: 'Seedance 2.0 unlocked' },
+        { icon: '💬', label: 'Technical Support' },
+        { icon: '📦', label: '+3,000 credits/mo' },
+      ],
+      annualOffer: 'Or upgrade annually and get 3.6 months free ($35/mo)',
+    },
     copy: {
       50: {
         title: 'Halfway through this month',
-        value: 'Pro gives you 4,900 credits/mo (~2.5×) + Seedance 2.0.',
+        value: 'Pro starts at just $35/mo with 4,900 credits + Seedance 2.0 — about 2.5× your current Starter allowance.',
       },
       80: {
         title: 'Only 380 credits left',
-        value: 'Upgrade to Pro now for 4,900 more credits + Seedance 2.0.',
+        value: 'Pro starts at just $35/mo — get 4,900 fresh credits + Seedance 2.0 immediately.',
       },
       100: {
         title: 'Starter credits used up',
-        value: "You'll get fresh credits at next renewal. Upgrade to Pro to continue now.",
+        value: 'Upgrade to Pro for just $35/mo and unlock 4,900 fresh credits + Seedance 2.0 instantly.',
       },
     },
   },
@@ -66,18 +101,29 @@ const ROLES: Record<DemoRole, RoleConfig> = {
     total: 4900,
     upgradeLabel: 'Upgrade to Ultra →',
     renewalCopy: 'Renews in 18 days',
+    upgrade: {
+      targetName: 'Ultra',
+      anchorPrice: 'just $63/mo',
+      deliverables: '≈ 2,966 social images or 34 Seedance 2.0 videos / month',
+      unlocks: [
+        { icon: '🎞', label: 'Long Video Early Access' },
+        { icon: '⚡', label: 'Priority Processing' },
+        { icon: '📦', label: '+4,000 credits/mo' },
+      ],
+      annualOffer: 'Or upgrade annually and get 3.6 months free ($63/mo)',
+    },
     copy: {
       50: {
         title: 'Halfway through this month',
-        value: 'Ultra gives you 8,900 credits/mo + Long Video Early Access + Priority.',
+        value: 'Ultra starts at just $63/mo with 8,900 credits, Long Video Early Access, and Priority processing.',
       },
       80: {
         title: 'Only 980 credits left',
-        value: 'Need more? Ultra unlocks 8,900 credits/mo + Long Video.',
+        value: 'Ultra starts at just $63/mo — unlock 8,900 fresh credits + Long Video.',
       },
       100: {
         title: 'Pro credits used up',
-        value: 'Upgrade to Ultra to add 8,900 credits + Long Video Early Access.',
+        value: 'Upgrade to Ultra for just $63/mo and add 8,900 credits + Long Video Early Access instantly.',
       },
     },
   },
@@ -86,14 +132,25 @@ const ROLES: Record<DemoRole, RoleConfig> = {
     total: 8900,
     upgradeLabel: 'Scale up Ultra →',
     renewalCopy: 'Renews in 22 days',
+    upgrade: {
+      targetName: 'Ultra 2×',
+      anchorPrice: '$119/mo (yearly equiv)',
+      deliverables: '≈ 5,933 social images or 68 Seedance 2.0 videos / month',
+      unlocks: [
+        { icon: '📦', label: '+8,900 credits/mo (2× total)' },
+        { icon: '💰', label: '33% bulk discount per credit' },
+        { icon: '🚀', label: 'Same Ultra features, more volume' },
+      ],
+      annualOffer: null, // Ultra 已经默认 yearly mock,不再二次推年付
+    },
     copy: {
       50: {
         title: 'Halfway through this month',
-        value: 'Scale up to 2× for +8,900 credits with 5% bulk discount.',
+        value: 'Scale Ultra to 2× for +8,900 credits with a 33% bulk discount.',
       },
       80: {
         title: 'Only 1,780 credits left',
-        value: 'Scale Ultra to 2× now — get +8,900 credits at 5% off per credit.',
+        value: 'Scale Ultra to 2× now — get +8,900 credits at 33% off per credit.',
       },
       100: {
         title: 'Ultra credits used up',
@@ -386,11 +443,27 @@ export function CreditsWarningDemo({ open, onClose }: CreditsWarningDemoProps) {
               </div>
             </div>
 
-            {/* Value copy with subtle background */}
-            <div className="mb-4 rounded-lg bg-white/60 backdrop-blur-sm p-2.5 border border-white/80">
+            {/* Value copy + deliverables(可感知产出) */}
+            <div className="mb-3 rounded-lg bg-white/60 backdrop-blur-sm p-2.5 border border-white/80">
               <p className="text-[12px] text-neutral-700 leading-relaxed">
                 {cfg.copy[threshold].value}
               </p>
+              <p className="mt-1.5 text-[11px] text-neutral-500 font-medium">
+                {cfg.upgrade.deliverables}
+              </p>
+            </div>
+
+            {/* Unlock tags — 提醒升级解锁的核心功能,不只是更多 credits */}
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {cfg.upgrade.unlocks.map(u => (
+                <span
+                  key={u.label}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/80 border border-neutral-200 text-[10.5px] font-medium text-neutral-700"
+                >
+                  <span aria-hidden>{u.icon}</span>
+                  {u.label}
+                </span>
+              ))}
             </div>
 
             {/* Upgrade CTA - 品牌渐变(#FFA73C → #FF5255),常驻 */}
@@ -417,10 +490,19 @@ export function CreditsWarningDemo({ open, onClose }: CreditsWarningDemoProps) {
               </svg>
             </button>
 
-            {/* CTA 下风险逆转微文案 */}
-            <p className="mt-2 text-center text-[10px] text-neutral-400">
-              Cancel anytime · No commitment
-            </p>
+            {/* Annual offer — 替代原 Cancel anytime,在最高 intent 瞬间抓 yearly 转化 */}
+            {cfg.upgrade.annualOffer && (
+              <button
+                type="button"
+                onClick={() => {
+                  // eslint-disable-next-line no-console
+                  console.log('[Demo] Annual upgrade clicked', { role, threshold });
+                }}
+                className="mt-2 w-full text-center text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 underline underline-offset-2"
+              >
+                👉 {cfg.upgrade.annualOffer}
+              </button>
+            )}
           </div>
         </div>
       )}

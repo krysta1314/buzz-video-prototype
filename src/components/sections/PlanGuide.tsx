@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { GUIDE, type PlanId } from '@/config/pricing';
 
-type Volume = 'low' | 'mid' | 'high' | 'explore';
-type SeedanceNeed = 'yes' | 'maybe' | 'no';
-type TeamSize = 'solo' | 'small' | 'large';
+type Volume = 'explore' | 'low' | 'mid' | 'high';
+type Format = 'image' | 'video' | 'mix';
+type Creator = 'solo' | 'team' | 'agency' | 'enterprise';
 
 type Recommendation = PlanId | 'enterprise';
 
 interface Answers {
   volume: Volume;
-  seedance: SeedanceNeed;
-  team: TeamSize;
+  format: Format;
+  creator: Creator;
 }
 
 interface QuizStateIntro { step: 'intro' }
@@ -20,66 +20,62 @@ type QuizState = QuizStateIntro | QuizStateQ | QuizStateResult;
 
 const QUESTION_TEXT: Record<'q1' | 'q2' | 'q3', { title: string; key: keyof Answers; options: { value: string; label: string; sub?: string }[] }> = {
   q1: {
-    title: 'How many ads or creatives do you ship per week?',
+    title: 'How many ad variations do you test per month?',
     key: 'volume',
     options: [
-      { value: 'explore', label: 'Just exploring',  sub: 'Trying things out, no production yet' },
-      { value: 'low',     label: '1–3 per week',    sub: 'Occasional ad campaigns' },
-      { value: 'mid',     label: '4–15 per week',   sub: 'Steady weekly cadence' },
-      { value: 'high',    label: '15+ per week',    sub: 'High-volume / agency workflow' },
+      { value: 'explore', label: 'Just exploring',           sub: 'Haven’t started production yet' },
+      { value: 'low',     label: '1–10 per month',      sub: 'Occasional campaigns' },
+      { value: 'mid',     label: '11–30 per month',     sub: 'Weekly testing & iteration' },
+      { value: 'high',    label: '30+ per month',            sub: 'High-volume / agency workflow' },
     ],
   },
   q2: {
-    title: 'Do you need Seedance 2.0 (cinematic-quality video)?',
-    key: 'seedance',
+    title: 'What is your primary ad format?',
+    key: 'format',
     options: [
-      { value: 'yes',   label: 'Yes' },
-      { value: 'maybe', label: 'Maybe occasionally' },
-      { value: 'no',    label: 'No, I focus on images' },
+      { value: 'image', label: 'Static image ads',                 sub: 'Product shots, social posts' },
+      { value: 'video', label: 'Video ads (TikTok / Reels / Shorts)', sub: 'Needs cinematic-quality engines' },
+      { value: 'mix',   label: 'Mix of images and videos',         sub: 'Full creative pipeline' },
     ],
   },
   q3: {
-    title: 'Are you working solo or with a team?',
-    key: 'team',
+    title: 'Who is creating the ads?',
+    key: 'creator',
     options: [
-      { value: 'solo',  label: 'Just me' },
-      { value: 'small', label: 'Small team (2–5)' },
-      { value: 'large', label: 'Larger team / agency (5+)' },
+      { value: 'solo',       label: 'Just me',                          sub: 'Solo creator / founder' },
+      { value: 'team',       label: 'Small marketing team (2–5)',  sub: 'In-house DTC / brand team' },
+      { value: 'agency',     label: 'Agency producing for clients',     sub: 'Multi-brand workflow' },
+      { value: 'enterprise', label: 'Larger team / organization (10+)', sub: 'Needs seats, SLA, compliance' },
     ],
   },
 };
 
-/** 简单加权 — 每个回答给候选 plan 加分，最高分为推荐。 */
+/**
+ * Scoring — 按同事 "Rig the Quiz Logic for Performance Outcomes" 建议:
+ * Volume / Creator / Format 都结构性偏向 Pro / Ultra / Enterprise(高 margin tier)。
+ * 极少数组合(Just exploring + image + solo)才会推回 Free / Starter。
+ */
 function computeRecommendation(a: Answers): Recommendation {
   const score: Record<Recommendation, number> = {
     free: 0, starter: 0, pro: 0, ultra: 0, enterprise: 0,
   };
 
-  // Q1 — volume 决定主轴
-  if (a.volume === 'explore') score.free += 3;
+  // Q1 — Volume(主轴):11-30/月直接 bypass Starter,30+/月锚到 Ultra
+  if (a.volume === 'explore') score.free += 5;
   if (a.volume === 'low')     score.starter += 3;
-  if (a.volume === 'mid')     score.pro += 3;
-  if (a.volume === 'high')    score.ultra += 3;
+  if (a.volume === 'mid')     { score.pro += 4; score.starter -= 3; }     // bypass Starter
+  if (a.volume === 'high')    { score.ultra += 4; score.pro += 1; }
 
-  // Q2 — Seedance 2.0 需求把下限拉到 Pro
-  if (a.seedance === 'yes') {
-    score.starter -= 2;
-    score.pro += 2;
-    score.ultra += 1;
-  }
-  if (a.seedance === 'maybe') {
-    score.pro += 1;
-  }
+  // Q2 — Format:Video → Pro+(Seedance 2.0);Image-only 保持灵活
+  if (a.format === 'image') score.starter += 1;
+  if (a.format === 'video') { score.pro += 3; score.ultra += 1; score.starter -= 2; }
+  if (a.format === 'mix')   { score.pro += 2; score.ultra += 1; }
 
-  // Q3 — 团队规模 push 向 Ultra/Enterprise
-  if (a.team === 'small') {
-    score.pro += 1;
-    score.ultra += 1;
-  }
-  if (a.team === 'large') {
-    score.ultra += 1;
-    score.enterprise += 2;
-  }
+  // Q3 — Creator:Agency 锚到 Ultra,Enterprise team 锚到 Enterprise
+  if (a.creator === 'solo')       { score.starter += 1; score.pro += 1; }
+  if (a.creator === 'team')       { score.pro += 2; score.ultra += 1; }
+  if (a.creator === 'agency')     { score.ultra += 4; score.enterprise += 1; }
+  if (a.creator === 'enterprise') { score.enterprise += 6; score.ultra += 1; }
 
   // 选最高分
   const entries = Object.entries(score) as [Recommendation, number][];
@@ -106,6 +102,29 @@ const RECOMMENDATION_HUE: Record<Recommendation, string> = {
 const RECOMMENDATION_LABEL: Record<Recommendation, string> = {
   free: 'Free', starter: 'Starter', pro: 'Pro', ultra: 'Ultra', enterprise: 'Enterprise',
 };
+
+// Input-echoing phrases — 把用户的 quiz 答案 mirror 回 ResultCard,降低"销售推荐"质感
+const VOLUME_PHRASES: Record<Volume, string> = {
+  explore: 'are just exploring AI ads',
+  low:     'test 1–10 ad variations per month',
+  mid:     'test 11–30 ad variations every month',
+  high:    'ship 30+ ad variations at high volume',
+};
+const FORMAT_PHRASES: Record<Format, string> = {
+  image: 'focus on static image ads',
+  video: 'create video ads (TikTok / Reels / Shorts)',
+  mix:   'work across both images and videos',
+};
+const CREATOR_PHRASES: Record<Creator, string> = {
+  solo:       'work solo',
+  team:       'lead a small marketing team',
+  agency:     'run an agency producing for multiple clients',
+  enterprise: 'work in a larger organization (10+ team)',
+};
+
+function buildEcho(a: Answers): string {
+  return `Because you ${VOLUME_PHRASES[a.volume]}, ${FORMAT_PHRASES[a.format]}, and ${CREATOR_PHRASES[a.creator]}`;
+}
 
 export function PlanGuide() {
   const [state, setState] = useState<QuizState>({ step: 'intro' });
@@ -158,6 +177,7 @@ export function PlanGuide() {
       {state.step === 'result' && (
         <ResultCard
           recommendation={state.recommendation}
+          answers={state.answers}
           onRetake={startQuiz}
         />
       )}
@@ -168,17 +188,29 @@ export function PlanGuide() {
           Or browse the plans by persona
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-          {GUIDE.map(g => (
-            <article key={g.id}>
-              <header className="pb-4 border-b border-neutral-200">
-                <h4 className="text-2xl font-bold tracking-tight">{g.name}</h4>
-                <p className="mt-1 text-[13px] text-neutral-500 leading-snug">{g.tagline}</p>
-              </header>
+          {GUIDE.map(g => {
+            // Persona 卡底部 CTA — 让"看完描述觉得对号入座"的用户能立刻行动,不必滚回顶部
+            const ctaLabel = g.id === 'enterprise' ? 'Contact Sales →' : `Choose ${g.name} →`;
+            const ctaHref = g.id === 'enterprise' ? '#enterprise' : '#plans';
+            return (
+              <article key={g.id} className="flex flex-col">
+                <header className="pb-4 border-b border-neutral-200">
+                  <h4 className="text-2xl font-bold tracking-tight">{g.name}</h4>
+                  <p className="mt-1 text-[13px] text-neutral-500 leading-snug">{g.tagline}</p>
+                </header>
 
-              <GuideList label="Suitable for" items={g.suitableFor} />
-              <GuideList label="Core features" items={g.coreFeatures} />
-            </article>
-          ))}
+                <GuideList label="Suitable for" items={g.suitableFor} />
+                <GuideList label="Core features" items={g.coreFeatures} />
+
+                <a
+                  href={ctaHref}
+                  className="mt-auto pt-5 text-[13px] font-semibold text-ink hover:text-neutral-700 inline-flex items-center gap-1 self-start"
+                >
+                  {ctaLabel}
+                </a>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -241,21 +273,31 @@ function QuestionStep({ stepKey, onAnswer, onCancel }: QuestionStepProps) {
 
 interface ResultCardProps {
   recommendation: Recommendation;
+  answers: Answers;
   onRetake: () => void;
 }
 
-function ResultCard({ recommendation, onRetake }: ResultCardProps) {
+function ResultCard({ recommendation, answers, onRetake }: ResultCardProps) {
   const label = RECOMMENDATION_LABEL[recommendation];
   const reason = RECOMMENDATION_REASON[recommendation];
   const hue = RECOMMENDATION_HUE[recommendation];
-  // 跳转 anchor：plan 跳 #plans；enterprise 跳 #enterprise（如果有）
+  // 跳转 anchor:plan 跳 #plans;enterprise 跳 #enterprise(暂时无 anchor)
   const anchor = recommendation === 'enterprise' ? '#enterprise' : '#plans';
+  // 高 intent CTA 文案 — 不再"see plan"被动,改成"get started / contact sales"主动
+  const ctaLabel =
+    recommendation === 'enterprise' ? 'Contact Sales →' :
+    recommendation === 'free' ? 'Start for Free →' :
+    `Get Started with ${label} →`;
 
   return (
     <div className={`max-w-xl mx-auto rounded-2xl border-2 p-6 sm:p-8 ${hue}`}>
       <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 mb-2">
         We recommend
       </div>
+      {/* Input-echoing — 把用户答案 mirror 回来,让推荐显得是基于他们的输入,不是销售推 */}
+      <p className="text-[13px] text-neutral-700 leading-relaxed mb-2">
+        🎯 <b>{buildEcho(answers)}</b>, we highly recommend:
+      </p>
       <h3 className="text-3xl font-bold tracking-tight mb-2">{label}</h3>
       <p className="text-sm text-neutral-700 leading-relaxed mb-5">{reason}</p>
 
@@ -264,7 +306,7 @@ function ResultCard({ recommendation, onRetake }: ResultCardProps) {
           href={anchor}
           className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-[10px] bg-ink text-white text-sm font-semibold hover:opacity-90"
         >
-          See {label} plan →
+          {ctaLabel}
         </a>
         <button
           type="button"

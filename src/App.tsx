@@ -19,7 +19,12 @@ export default function App() {
 
   return (
     <>
-      <PromoBanner />
+      {/* Preview mode:一次性展示 4 种 role 的 banner,用 previewLabel 区分。
+          关闭 preview 模式只需把这 4 行换回 <PromoBanner role={role} /> */}
+      <PromoBanner role="free"    previewLabel="Free user" />
+      <PromoBanner role="starter" previewLabel="Starter user" />
+      <PromoBanner role="pro"     previewLabel="Pro user" />
+      <PromoBanner role="ultra"   previewLabel="Ultra user" />
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 py-12 sm:py-16">
         <Header cycle={state.cards.cycle} onCycleChange={state.cards.setCycle} role={role} />
         <section id="plans">

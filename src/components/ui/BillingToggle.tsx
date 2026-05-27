@@ -29,7 +29,7 @@ export function BillingToggle({ value, onChange, ariaLabel }: BillingToggleProps
             }`}
           >
             {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
-            {cycle === 'yearly' && <Badge variant="pill">Save 30%</Badge>}
+            {cycle === 'yearly' && <Badge variant="pill">30% OFF</Badge>}
           </button>
         );
       })}

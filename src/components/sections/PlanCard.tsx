@@ -116,8 +116,10 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
       className={`${CARD_BASE} ${variantClasses[planId]}`}
       aria-labelledby={`plan-${planId}-name`}
     >
-      {/* Top badge: Current Plan replaces plan.badge when this is the user's plan */}
-      {isCurrent ? (
+      {/* Top badge: Volume Upgrade > Current Plan > 默认 plan.badge 的优先级 */}
+      {isVolumeUpgrade ? (
+        <RecommendedScaleBadge />
+      ) : isCurrent ? (
         <CurrentPlanBadge planId={planId} />
       ) : (
         plan.badge && <Badge variant={plan.badge.variant}>{plan.badge.label}</Badge>
@@ -137,8 +139,11 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
       <header className={ROW.header}>
         <div className="flex items-center gap-2 flex-wrap">
           <h3 id={`plan-${planId}-name`} className="text-2xl font-bold tracking-tight">{plan.name}</h3>
-          {/* Free 用户看 Yearly 时,标题旁强提示 Save 30% — 跟 bulk discount chip 同样的红色斜切样式 */}
-          {currentRole === 'free' && isYearly && (
+          {/* Save 30% 仅显示在升级目标 / Free 默认 plan 上:
+              - 当前 plan 不显示(已是 yearly)
+              - 降级目标不显示(不主动 push 降级)
+              - Ultra 滑块 > 1x 时让位给 bulk discount chip,避免两个红 chip 并排 */}
+          {isYearly && !isCurrent && ctaVariant !== 'downgrade' && SCALE_DISCOUNTS[effectiveScale] === 0 && (
             <span
               className="inline-flex items-center text-[13px] font-extrabold text-white px-3 py-1 leading-none tracking-wider"
               style={{
@@ -149,7 +154,7 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
               }}
             >
               <span style={{ transform: 'skewX(14deg)', display: 'inline-block' }}>
-                Save 30%
+                30% OFF
               </span>
             </span>
           )}
@@ -187,8 +192,10 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
       </div>
 
       <div className={`bg-neutral-50 rounded-[10px] p-3 text-xs leading-[1.5] flex flex-col gap-2 ${ROW.credits}`}>
-        <div className="font-semibold text-[13px] text-ink flex items-center gap-1">
-          <span>{fmtNumber(credits)} credits/{isYearly ? 'year' : 'month'}</span>
+        {/* Paid credits 头部 — 主数字加粗放大,营造"丰盈"感(对比 Free 的 one-time) */}
+        <div className="font-bold text-[16px] text-ink flex items-baseline gap-1">
+          <span>{fmtNumber(credits)}</span>
+          <span className="text-[12px] font-medium text-neutral-600">credits/{isYearly ? 'year' : 'month'}</span>
           {isYearly && (
             <InfoIcon label="Yearly credits delivery">
               Yearly plans deliver all credits upfront upon successful subscription.
@@ -224,11 +231,8 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
 
       {isVolumeUpgrade && currentSub ? (
         <VolumeUpgradeCTA
-          fromCredits={computeCredits(planId, currentSub.currentScale, cycle)}
-          toCredits={credits}
-          fromPrice={computePrice(planId, currentSub.currentScale, cycle).displayPrice}
-          toPrice={price.displayPrice}
-          isYearly={isYearly}
+          scale={effectiveScale}
+          savings={savings}
           onClick={handleUpgradeClick}
         />
       ) : (
@@ -243,9 +247,12 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
       )}
 
       <div className={`text-center text-xs text-neutral-500 ${ROW.save}`}>
-        {isYearly && !isCurrent && (
+        {/* Save 行只对升级目标显示;降级 / 当前 plan 不显示(不鼓励降级,当前已是 yearly)*/}
+        {isYearly && !isCurrent && ctaVariant !== 'downgrade' && (
           <>
-            <span className="font-semibold text-ink">Save {fmtMoney(savings)}</span> compared to monthly
+            <span className="font-semibold text-ink">Save {fmtMoney(savings)}</span>
+            {/* 月数动态算:省下的金额 ÷ 月单价,保留 1 位小数 */}
+            <span className="text-emerald-600 font-semibold"> ≈ {(savings / price.monthlyPrice).toFixed(1)} months free</span>
           </>
         )}
       </div>
@@ -276,6 +283,22 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
         />
       )}
     </article>
+  );
+}
+
+/** Volume upgrade(Ultra 当前用户拖滑块向上)的顶部 badge — "Recommended Scale" 紫色斜切 */
+function RecommendedScaleBadge() {
+  return (
+    <span
+      className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 text-[11px] font-bold tracking-wide rounded-full whitespace-nowrap inline-flex items-center gap-1 text-white"
+      style={{
+        background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+        boxShadow: '0 4px 12px rgba(124, 58, 237, 0.32)',
+      }}
+    >
+      <span aria-hidden>✨</span>
+      Recommended Scale
+    </span>
   );
 }
 
@@ -345,29 +368,34 @@ function RoleAwareCTA({ variant, planId, planName, fallbackCta, onUpgradeClick, 
   return <Button variant={ctaVariants[planId]}>{fallbackCta}</Button>;
 }
 
-/** Ultra 当前用户拖滑块到更高倍数时的 CTA — 紫色 active + delta 小字 */
+/** Ultra 当前用户拖滑块到更高倍数时的 CTA — 紫色 active + "解锁折扣"价值副标 */
 interface VolumeUpgradeCTAProps {
-  fromCredits: number;
-  toCredits: number;
-  fromPrice: number;
-  toPrice: number;
-  isYearly: boolean;
+  scale: Scale;
+  savings: number;
   onClick: () => void;
 }
 
-function VolumeUpgradeCTA({ fromCredits, toCredits, fromPrice, toPrice, isYearly, onClick }: VolumeUpgradeCTAProps) {
-  const creditsDelta = toCredits - fromCredits;
-  const priceDelta = toPrice - fromPrice;
+function VolumeUpgradeCTA({ scale, savings, onClick }: VolumeUpgradeCTAProps) {
+  const discountPct = Math.round(SCALE_DISCOUNTS[scale] * 100);
+  // 4x 是最高档,标记为 "Best value"
+  const isBestValue = scale === 4;
   return (
     <div className="flex flex-col gap-1">
       <Button
         variant="secondary"
         onClick={e => { e.preventDefault(); onClick(); }}
       >
-        Update Subscription
+        Upgrade Credit Limit
       </Button>
-      <div className="text-center text-[11px] text-neutral-500">
-        +{fmtNumber(creditsDelta)} credits/{isYearly ? 'yr' : 'mo'} · +{fmtMoney(priceDelta)}/mo
+      <div className="text-center text-xs text-neutral-600 leading-relaxed">
+        {isBestValue ? (
+          <>
+            <span className="font-bold text-emerald-700">✨ Best value:</span>{' '}
+            Unlocks {discountPct}% volume discount · Save <b>{fmtMoney(savings)}</b>/year
+          </>
+        ) : (
+          <>Unlocks an extra <b>{discountPct}% volume discount</b> + all Ultra features</>
+        )}
       </div>
     </div>
   );
@@ -468,9 +496,10 @@ export function FreePlanCard() {
       </div>
 
       <div className={`bg-neutral-50 rounded-[10px] p-3 text-xs leading-[1.5] flex flex-col gap-2 ${ROW.credits}`}>
-        <div className="font-semibold text-[13px] text-ink">
-          {fmtNumber(FREE_PLAN.oneTimeCredits)} credits{' '}
-          <span className="text-neutral-500 font-normal">(one-time)</span>
+        {/* Free credits 头部 — `(one-time)` 弱化(小字 + 浅灰 + 斜体)突出"受限"感,跟付费 "credits/year" 形成对比 */}
+        <div className="text-[13px] text-ink">
+          <span className="font-semibold">{fmtNumber(FREE_PLAN.oneTimeCredits)} credits</span>
+          <span className="ml-1 text-[11px] text-neutral-400 italic font-normal">(one-time)</span>
         </div>
         <div className="text-neutral-500">{FREE_PLAN.exampleSub}</div>
       </div>
