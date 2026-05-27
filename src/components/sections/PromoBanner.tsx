@@ -55,7 +55,9 @@ const PROMO_BY_ROLE: Record<UserRole, PromoConfig> = {
 };
 
 const DISMISS_KEY = 'buzz_promo_dismissed_at';
-const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24h,关掉后 24 小时再显示
+const COUNTDOWN_START_KEY = 'buzz_promo_countdown_start';
+const COUNTDOWN_DURATION_MS = 24 * 60 * 60 * 1000; // 24h 一次性,过期后倒计时消失
 
 interface PromoBannerProps {
   role: UserRole;
@@ -121,13 +123,24 @@ export function PromoBanner({ role, previewLabel }: PromoBannerProps) {
 
   const cfg = PROMO_BY_ROLE[role];
 
-  // mock countdown: 24h sliding window(每次到 0 重新计 24h,纯演示用)
-  // 真生产应该接活动 end date
-  const cycle = 24 * 60 * 60 * 1000;
-  const msLeft = cycle - (now % cycle);
-  const h = String(Math.floor(msLeft / 3600000)).padStart(2, '0');
-  const m = String(Math.floor((msLeft % 3600000) / 60000)).padStart(2, '0');
-  const s = String(Math.floor((msLeft % 60000) / 1000)).padStart(2, '0');
+  // 一次性 24 小时倒计时:从用户首次访问起算,过期后倒计时消失(banner 继续显示)
+  let countdownText: string | null = null;
+  try {
+    let start = Number(localStorage.getItem(COUNTDOWN_START_KEY));
+    if (!start || Number.isNaN(start)) {
+      start = Date.now();
+      localStorage.setItem(COUNTDOWN_START_KEY, String(start));
+    }
+    const msLeft = COUNTDOWN_DURATION_MS - (now - start);
+    if (msLeft > 0) {
+      const h = String(Math.floor(msLeft / 3600000)).padStart(2, '0');
+      const m = String(Math.floor((msLeft % 3600000) / 60000)).padStart(2, '0');
+      const s = String(Math.floor((msLeft % 60000) / 1000)).padStart(2, '0');
+      countdownText = `${h}:${m}:${s}`;
+    }
+  } catch {
+    /* localStorage unavailable — 倒计时不显示,不影响 banner 主体 */
+  }
 
   return (
     <div role="region" aria-label="Promotional banner" className="relative w-full bg-ink text-neutral-200">
@@ -161,15 +174,17 @@ export function PromoBanner({ role, previewLabel }: PromoBannerProps) {
           <span aria-hidden>{cfg.emoji}</span>
           <span>{renderHighlighted(cfg.copy, cfg.highlights)}</span>
 
-          {/* 倒计时 — FOMO 紧迫感 */}
-          <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold tracking-wider"
-            style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#a3e635' }}
-            aria-label="Promotion countdown"
-          >
-            <span aria-hidden>⏳</span>
-            {h}:{m}:{s}
-          </span>
+          {/* 倒计时 — 一次性 24 小时,过期后整个 chip 消失 */}
+          {countdownText && (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold tracking-wider"
+              style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#a3e635' }}
+              aria-label="Promotion countdown"
+            >
+              <span aria-hidden>⏳</span>
+              {countdownText}
+            </span>
+          )}
         </a>
 
         <a
@@ -184,7 +199,7 @@ export function PromoBanner({ role, previewLabel }: PromoBannerProps) {
       <button
         type="button"
         onClick={dismiss}
-        aria-label="Dismiss promotional banner (hidden for 7 days)"
+        aria-label="Dismiss promotional banner (hidden for 24 hours)"
         className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 focus:text-white focus:bg-white/10 transition-colors focus:outline-none"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
