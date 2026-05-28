@@ -18,9 +18,15 @@ import type { UserRole } from '@/hooks/useUserRole';
 interface PromoConfig {
   badge: string;
   emoji: string;
+  /** 桌面端文案(完整版,含 highlights) */
   copy: string;
+  /** 移动端文案(短版,无 highlights,不超 5 个英文词)*/
+  mobileCopy: string;
   highlights: string[]; // 文案里高亮的产品名(lime 绿色)
+  /** 桌面端 CTA 文案 */
   cta: string;
+  /** 移动端 CTA 文案(更短)*/
+  mobileCta: string;
 }
 
 const PROMO_BY_ROLE: Record<UserRole, PromoConfig> = {
@@ -28,29 +34,37 @@ const PROMO_BY_ROLE: Record<UserRole, PromoConfig> = {
     badge: '30% OFF',
     emoji: '⚡',
     copy: 'Stop running on empty. Upgrade to Starter to remove watermarks & unlock Premium Video Models.',
+    mobileCopy: 'Unlock Premium Video',
     highlights: ['Starter'],
     cta: 'Get 3.6 Months Free →',
+    mobileCta: 'Save 30% →',
   },
   starter: {
     badge: 'UPGRADE PRO',
     emoji: '🎬',
     copy: 'Unlock Seedance 2.0 cinematic video + Technical Support — Pro’s elite models.',
+    mobileCopy: 'Unlock Seedance 2.0',
     highlights: ['Seedance 2.0', 'Technical Support'],
     cta: 'Upgrade to Pro →',
+    mobileCta: 'Go Pro →',
   },
   pro: {
     badge: 'GO ULTRA',
     emoji: '🎞',
     copy: 'Unlock Long Video Generation + Priority Processing on Ultra.',
+    mobileCopy: 'Unlock Long Video',
     highlights: ['Long Video Generation', 'Priority Processing'],
     cta: 'Upgrade to Ultra →',
+    mobileCta: 'Go Ultra →',
   },
   ultra: {
     badge: 'RUNNING HOT?',
     emoji: '📦',
     copy: 'Scaling up this month? Drag your volume slider to save up to 40% on credits.',
+    mobileCopy: 'Save up to 40% on credits',
     highlights: ['40%'],
     cta: 'Scale Credit Limit →',
+    mobileCta: 'Scale up →',
   },
 };
 
@@ -172,12 +186,14 @@ export function PromoBanner({ role, previewLabel }: PromoBannerProps) {
 
           {/* Emoji + 正文 + lime 绿色高亮关键词 */}
           <span aria-hidden>{cfg.emoji}</span>
-          <span>{renderHighlighted(cfg.copy, cfg.highlights)}</span>
+          {/* 桌面端完整文案(含 highlights);移动端短文案 */}
+          <span className="hidden sm:inline">{renderHighlighted(cfg.copy, cfg.highlights)}</span>
+          <span className="sm:hidden">{cfg.mobileCopy}</span>
 
-          {/* 倒计时 — 一次性 24 小时,过期后整个 chip 消失 */}
+          {/* 倒计时 — 一次性 24 小时,过期后整个 chip 消失。移动端隐藏(空间不够) */}
           {countdownText && (
             <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold tracking-wider"
+              className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold tracking-wider"
               style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#a3e635' }}
               aria-label="Promotion countdown"
             >
@@ -189,10 +205,11 @@ export function PromoBanner({ role, previewLabel }: PromoBannerProps) {
 
         <a
           href="#plans"
-          className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-bold whitespace-nowrap transition-opacity hover:opacity-90"
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 sm:px-3.5 py-1.5 text-[12px] sm:text-[13px] font-bold whitespace-nowrap transition-opacity hover:opacity-90"
           style={{ background: '#a3e635', color: '#0a0a0a' }}
         >
-          {cfg.cta}
+          <span className="hidden sm:inline">{cfg.cta}</span>
+          <span className="sm:hidden">{cfg.mobileCta}</span>
         </a>
       </div>
 
