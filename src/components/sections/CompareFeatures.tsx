@@ -2,6 +2,7 @@ import {
   MODELS,
   PAID_PLANS,
   PAID_PLAN_ORDER,
+  SCALE_DISCOUNTS,
   type ModelCategory,
   type PaidPlanId,
 } from '@/config/pricing';
@@ -192,6 +193,12 @@ function PaidColHeader({ planId, cycle, scale, onScaleChange }: PaidColHeaderPro
             onChange={onScaleChange}
             ariaLabel={`${plan.name} compare column credit multiplier`}
             tickFormat={(s) => fmtNumber(computeCredits(planId, s, cycle))}
+            chipFormat={(s) => {
+              if (SCALE_DISCOUNTS[cycle][s] === 0) return null;
+              const p = computePrice(planId, s, cycle);
+              if (p.displayPrice >= p.referencePrice) return null;
+              return `${Math.round((1 - p.displayPrice / p.referencePrice) * 100)}% OFF`;
+            }}
           />
         </div>
       ) : (

@@ -7,18 +7,25 @@ interface ScalingSliderProps {
   ariaLabel: string;
   /** Format function for each tick label. Defaults to "Nx" (e.g. "2x"). */
   tickFormat?: (s: Scale) => string;
+  /** 自定义每档 discount chip 文案;返回 null 表示该档不显示 chip。默认用 SCALE_DISCOUNTS */
+  chipFormat?: (s: Scale) => string | null;
 }
 
-export function ScalingSlider({ value, onChange, ariaLabel, tickFormat }: ScalingSliderProps) {
+export function ScalingSlider({ value, onChange, ariaLabel, tickFormat, chipFormat }: ScalingSliderProps) {
   const formatTick = tickFormat ?? ((s: Scale) => `${s}x`);
+  const formatChip = chipFormat ?? ((s: Scale) => {
+    // Fallback:用 monthly bulk discount(只在父组件没传 chipFormat 时用)
+    const d = SCALE_DISCOUNTS.monthly[s];
+    return d > 0 ? `${Math.round(d * 100)}% OFF` : null;
+  });
   const idx = SCALES.indexOf(value);
   return (
     <div className="text-xs">
       {/* Discount badges, positioned above each non-1x tick. Edge chips anchor to edges to avoid overflow. */}
       <div className="relative w-full h-[18px] mb-1">
         {SCALES.map((s, i) => {
-          const discount = SCALE_DISCOUNTS[s];
-          if (discount === 0) return null;
+          const chipText = formatChip(s);
+          if (!chipText) return null;
           const pct = (i / (SCALES.length - 1)) * 100;
           const isLast = pct === 100;
           const isFirst = pct === 0;
@@ -36,7 +43,7 @@ export function ScalingSlider({ value, onChange, ariaLabel, tickFormat }: Scalin
               }}
               className="absolute top-0 text-[9px] font-bold text-white rounded px-1.5 py-px leading-tight whitespace-nowrap tracking-wide"
             >
-              {Math.round(discount * 100)}% OFF
+              {chipText}
             </span>
           );
         })}
@@ -48,7 +55,7 @@ export function ScalingSlider({ value, onChange, ariaLabel, tickFormat }: Scalin
         step={1}
         value={idx}
         aria-label={ariaLabel}
-        aria-valuetext={`${value}x credits, ${Math.round(SCALE_DISCOUNTS[value] * 100)}% bulk discount`}
+        aria-valuetext={`${value}x credits, ${Math.round(SCALE_DISCOUNTS.monthly[value] * 100)}% bulk discount`}
         onChange={(e) => onChange(SCALES[Number(e.target.value)])}
         className="w-full h-1 rounded-full bg-neutral-200 appearance-none cursor-pointer
           [&::-webkit-slider-thumb]:appearance-none

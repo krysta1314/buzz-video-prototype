@@ -9,11 +9,18 @@ export type BillingCycle = 'monthly' | 'yearly';
 // Simplified to 3 tiers per feedback — only Ultra uses the slider now (Starter / Pro are fixed-price).
 export const SCALES: readonly Scale[] = [1, 2, 4] as const;
 
-/** Bulk discount applied to price when scaling up. */
-export const SCALE_DISCOUNTS: Record<Scale, number> = {
-  1: 0,
-  2: 0.33,
-  4: 0.40,
+/**
+ * Bulk discount applied to base price when scaling up.
+ * Cycle-specific:monthly 和 yearly 用不同折扣率,以让 chip(= 1 - display/reference)显示符合营销 target。
+ *
+ * Monthly bulk = chip 直接显示数字(2× = 33% off,4× = 40% off)
+ * Yearly bulk = chip 显示"叠加 yearly 30% 后的总折扣"
+ *   - Ultra 2× yearly: $62.30 × 2 × 0.857 = $107 → vs monthly raw $178 = 40% off chip
+ *   - Ultra 4× yearly: $62.30 × 4 × 0.714 = $178 → vs monthly raw $356 = 50% off chip
+ */
+export const SCALE_DISCOUNTS: Record<BillingCycle, Record<Scale, number>> = {
+  monthly: { 1: 0, 2: 0.33,  4: 0.40  },
+  yearly:  { 1: 0, 2: 0.143, 4: 0.286 },
 };
 
 export interface PlanCopy {

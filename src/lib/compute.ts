@@ -22,9 +22,12 @@ export interface PriceBreakdown {
 
 export function computePrice(planId: PaidPlanId, scale: Scale, cycle: BillingCycle): PriceBreakdown {
   const p = PAID_PLANS[planId];
-  const bulkMultiplier = 1 - SCALE_DISCOUNTS[scale];
+  // Cycle-specific bulk discount(monthly 比 yearly bulk 大,因为 yearly 已经叠加 30% 周期折扣)
+  const bulkMultiplier = 1 - SCALE_DISCOUNTS[cycle][scale];
+  // monthlyPrice 用 monthly bulk 算(用于 Save / Compare to monthly 文案)
+  const monthlyBulkMultiplier = 1 - SCALE_DISCOUNTS.monthly[scale];
   const referencePrice = p.baseMonthlyPrice * scale;
-  const monthlyPrice = referencePrice * bulkMultiplier;
+  const monthlyPrice = referencePrice * monthlyBulkMultiplier;
   if (cycle === 'monthly') {
     return { referencePrice, monthlyPrice, displayPrice: monthlyPrice, annualTotal: monthlyPrice * 12 };
   }

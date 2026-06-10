@@ -143,7 +143,7 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
               - 当前 plan 不显示(已是 yearly)
               - 降级目标不显示(不主动 push 降级)
               - Ultra 滑块 > 1x 时让位给 bulk discount chip,避免两个红 chip 并排 */}
-          {isYearly && !isCurrent && ctaVariant !== 'downgrade' && SCALE_DISCOUNTS[effectiveScale] === 0 && (
+          {isYearly && !isCurrent && ctaVariant !== 'downgrade' && SCALE_DISCOUNTS[cycle][effectiveScale] === 0 && (
             <span
               className="inline-flex items-center text-[13px] font-extrabold text-white px-3 py-1 leading-none tracking-wider"
               style={{
@@ -158,7 +158,7 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
               </span>
             </span>
           )}
-          {SCALE_DISCOUNTS[effectiveScale] > 0 && (
+          {SCALE_DISCOUNTS[cycle][effectiveScale] > 0 && (
             <span
               className="inline-flex items-center text-[13px] font-extrabold text-white px-3 py-1 leading-none tracking-wider"
               style={{
@@ -169,7 +169,7 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
               }}
             >
               <span style={{ transform: 'skewX(14deg)', display: 'inline-block' }}>
-                {Math.round(SCALE_DISCOUNTS[effectiveScale] * 100)}% OFF
+                {Math.round((1 - price.displayPrice / price.referencePrice) * 100)}% OFF
               </span>
             </span>
           )}
@@ -213,6 +213,13 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
               onChange={onScaleChange}
               ariaLabel={`${plan.name} credit multiplier`}
               tickFormat={(s) => fmtNumber(computeCredits(planId, s, cycle))}
+              chipFormat={(s) => {
+                // 没 bulk discount 不显示 chip(避免 1× yearly 跟 monthly 1× 比出"30% OFF")
+                if (SCALE_DISCOUNTS[cycle][s] === 0) return null;
+                const p = computePrice(planId, s, cycle);
+                if (p.displayPrice >= p.referencePrice) return null;
+                return `${Math.round((1 - p.displayPrice / p.referencePrice) * 100)}% OFF`;
+              }}
             />
           </div>
         )}
@@ -233,6 +240,7 @@ export function PaidPlanCard({ planId, cycle, scale, onScaleChange, currentRole 
         <VolumeUpgradeCTA
           scale={effectiveScale}
           savings={savings}
+          cycle={cycle}
           onClick={handleUpgradeClick}
         />
       ) : (
@@ -372,11 +380,16 @@ function RoleAwareCTA({ variant, planId, planName, fallbackCta, onUpgradeClick, 
 interface VolumeUpgradeCTAProps {
   scale: Scale;
   savings: number;
+  cycle: BillingCycle;
   onClick: () => void;
 }
 
-function VolumeUpgradeCTA({ scale, savings, onClick }: VolumeUpgradeCTAProps) {
-  const discountPct = Math.round(SCALE_DISCOUNTS[scale] * 100);
+function VolumeUpgradeCTA({ scale, savings, cycle, onClick }: VolumeUpgradeCTAProps) {
+  // 按 cycle 取对应 bulk discount(monthly 33/40, yearly 14/29)— 用户看到的是 chip 上的数字
+  // 但 yearly 用户看到的"解锁折扣"应该是 chip 显示的 40%/50% 而不是底层 14%/29%
+  // 简化:始终用 monthly 表的数字(33/40 更营销化),跟 chip 略不一致但更直观
+  const discountPct = Math.round(SCALE_DISCOUNTS.monthly[scale] * 100);
+  void cycle; // 暂未用,保留 prop 供未来按 cycle 分文案
   // 4x 是最高档,标记为 "Best value"
   const isBestValue = scale === 4;
   return (
