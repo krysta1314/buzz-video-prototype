@@ -116,6 +116,9 @@ export function CompareFeatures({ region }: Props) {
             <GroupRow label="AI Avatars & Customization" />
             <FeatureRow label="AI Avatars"             values={['1','Unlimited','Unlimited','Unlimited']} planColTint={planColTint} />
             <FeatureRow label="Character Customization (Seedance 2.0)" values={['✗','Unlimited','Unlimited','Unlimited']} planColTint={planColTint} />
+            {/* v2 新增 — 并发任务数 + 优先队列 */}
+            <FeatureRow label="Concurrent Tasks"       values={['1','4','8','12']} planColTint={planColTint} />
+            <FeatureRow label="Priority Queue"         values={['✗','✗','✓','✓']} planColTint={planColTint} />
           </tbody>
         </table>
       </div>

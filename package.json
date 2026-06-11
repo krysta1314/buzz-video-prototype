@@ -1,13 +1,13 @@
 {
-  "name": "buzz-pricing",
+  "name": "buzz-pricing-v2",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 5174",
     "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "preview-build": "tsc -b && vite build && cp dist/index.html ../preview.html && cp dist/index.html ../buzz-pricing-preview.html && echo '✓ Preview ready: open preview.html in Claude Code'",
+    "preview": "vite preview --port 5174",
+    "preview-build": "tsc -b && vite build && cp dist/index.html ../preview-v2.html && echo '✓ Preview ready: open preview-v2.html in Claude Code'",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

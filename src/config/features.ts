@@ -54,6 +54,9 @@ export const FEATURE_SECTIONS: FeatureSection[] = [
       { label: 'Technical Support',                        values: { free: no,  starter: no,  pro: yes, ultra: yes } },
       { label: 'Character Customization (Seedance 2.0)',   values: { free: no,  starter: unlimited, pro: unlimited, ultra: unlimited } },
       { label: 'AI Avatars',                               values: { free: { kind: 'value', label: '10' }, starter: unlimited, pro: unlimited, ultra: unlimited } },
+      // v2 新增 — 并发任务数 + 优先队列
+      { label: 'Concurrent Tasks',                         values: { free: { kind: 'value', label: '1' }, starter: { kind: 'value', label: '4' }, pro: { kind: 'value', label: '8' }, ultra: { kind: 'value', label: '12' } } },
+      { label: 'Priority Queue',                           values: { free: no,  starter: no,  pro: yes, ultra: yes } },
     ],
   },
   {
